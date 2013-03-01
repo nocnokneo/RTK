@@ -64,7 +64,8 @@ int main(int argc, char * argv[])
   SLPType::Pointer slp=SLPType::New();
   slp->SetInput(constantImageSource->GetOutput());
   slp->SetGeometry(geometryReader->GetOutputObject());
-  slp->SetPhantomScale(args_info.phantomscale_arg);
+  if (args_info.phantomscale_given)
+    slp->SetPhantomScale(args_info.phantomscale_arg);
   slp->Update();
 
   // Write
