@@ -43,6 +43,14 @@ namespace rtk
  * When an independent projection has to be processed, these values have to be set by the user from
  * a priori knowledge of the detector displacements.
  *
+ * The weighting accounts for variations in SourceToDetectorDistances,
+ * SourceOffsetsX and ProjectionOffsetsX. It currently assumes constant
+ * SourceToIsocenterDistances and 0. InPlaneAngles. The other parameters are
+ * not relevant in the computation because the weighting is reproduced at
+ * every gantry angle on each line of the projection images.
+ *
+ * \test rtkdisplaceddetectortest.cxx
+ *
  * \author Simon Rit
  *
  * \ingroup ImageToImageFilter
@@ -80,7 +88,8 @@ public:
   itkSetMacro(Geometry, GeometryPointer);
 
   /**
-   * Get / Set the minimum and maximum offsets of the detector along the weighting direction.
+   * Get / Set the minimum and maximum offsets of the detector along the
+   * weighting direction desribed in ToUntiltedCoordinate.
    */
   void SetOffsets(double minOffset, double maxOffset);
   itkGetMacro(MinimumOffset, double);
@@ -118,8 +127,8 @@ private:
    */
   bool m_OffsetsSet;
 
-  /** Superior and inferior position of the detector along the weighting direction, i.e. x.
-   * The computed value account for the x projection offset of the geometry.
+  /** Superior and inferior position of the detector along the weighting
+   *  direction, i.e., the virtual detector described in ToUntiltedCoordinate.
    */
   double m_InferiorCorner;
   double m_SuperiorCorner;

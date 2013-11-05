@@ -9,9 +9,13 @@
 typedef rtk::ThreeDCircularProjectionGeometry GeometryType;
 
 template<class TImage>
+#if FAST_TESTS_NO_CHECKS
+void CheckImageQuality(typename TImage::Pointer itkNotUsed(recon), typename TImage::Pointer itkNotUsed(ref))
+{
+}
+#else
 void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer ref)
 {
-#if !(FAST_TESTS_NO_CHECKS)
   typedef itk::ImageRegionConstIterator<TImage> ImageIteratorType;
   ImageIteratorType itTest( recon, recon->GetBufferedRegion() );
   ImageIteratorType itRef( ref, ref->GetBufferedRegion() );
@@ -62,8 +66,8 @@ void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer 
               << PSNR << " instead of 100" << std::endl;
     exit( EXIT_FAILURE);
     }
-#endif
 }
+#endif
 
 void CheckGeometries(GeometryType *g1, GeometryType *g2)
 {
@@ -108,6 +112,19 @@ void CheckGeometries(GeometryType *g1, GeometryType *g2)
     }
 }
 
+/**
+ * \file rtkdigisenstest.cxx
+ *
+ * \brief Functional tests for classes managing Digisens data
+ *
+ * This test reads a projection and the geometry of an acquisition from a
+ * Digisens acquisition and compares it to the expected results, which are
+ * read from a baseline image in the MetaIO file format and a geometry file in
+ * the RTK format, respectively.
+ *
+ * \author Simon Rit
+ */
+
 int main(int, char** )
 {
   // Elekta geometry
@@ -143,10 +160,10 @@ int main(int, char** )
 
   // Reference projections reader
   ReaderType::Pointer readerRef = ReaderType::New();
-  fileNames.clear();
-  fileNames.push_back( std::string(RTK_DATA_ROOT) +
+  std::vector<std::string> fileNamesRef;
+  fileNamesRef.push_back( std::string(RTK_DATA_ROOT) +
                        std::string("/Baseline/Digisens/attenuation.mha") );
-  readerRef->SetFileNames( fileNames );
+  readerRef->SetFileNames( fileNamesRef );
   TRY_AND_EXIT_ON_ITK_EXCEPTION(readerRef->Update());
 
   // 2. Compare read projections

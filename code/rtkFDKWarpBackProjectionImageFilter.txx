@@ -33,8 +33,9 @@ FDKWarpBackProjectionImageFilter<TInputImage,TOutputImage,TDeformation>
 ::BeforeThreadedGenerateData()
 {
   this->SetTranspose(true);
+  typename TOutputImage::RegionType splitRegion;
   m_Barrier = itk::Barrier::New();
-  m_Barrier->Initialize(this->GetNumberOfThreads());
+  m_Barrier->Initialize( this->SplitRequestedRegion(0, this->GetNumberOfThreads(), splitRegion) );
 }
 
 /**
@@ -101,7 +102,7 @@ FDKWarpBackProjectionImageFilter<TInputImage,TOutputImage,TDeformation>
     warpInterpolator->SetInputImage(m_Deformation->GetOutput());
 
     // Extract the current slice
-    ProjectionImagePointer projection = this->GetProjection(iProj);
+    ProjectionImagePointer projection = this->template GetProjection< ProjectionImageType >(iProj);
     interpolator->SetInputImage(projection);
 
     // Index to index matrix normalized to have a correct backprojection weight

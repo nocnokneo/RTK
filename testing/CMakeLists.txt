@@ -1,6 +1,5 @@
 # Set the data directory to the directory created by the ExternalData.cmake
 # script
- set(<variable> <value> [[CACHE <type> <docstring> [FORCE]] | PARENT_SCOPE])
 
 set(RTK_DATA_ROOT ${CMAKE_BINARY_DIR}/ExternalData/testing/Data CACHE PATH "Path of the data root")
 MARK_AS_ADVANCED(RTK_DATA_ROOT)
@@ -25,6 +24,10 @@ IF(OPENCL_FOUND AND OPENCL_HAVE_GPU)
   ADD_TEST(rtkfdkopencltest ${EXECUTABLE_OUTPUT_PATH}/rtkfdkopencltest)
 ENDIF(OPENCL_FOUND AND OPENCL_HAVE_GPU)
 
+ADD_EXECUTABLE(rtkmotioncompensatedfdktest rtkmotioncompensatedfdktest.cxx)
+TARGET_LINK_LIBRARIES(rtkmotioncompensatedfdktest RTK)
+ADD_TEST(rtkmotioncompensatedfdktest ${EXECUTABLE_OUTPUT_PATH}/rtkmotioncompensatedfdktest)
+
 ADD_EXECUTABLE(rtkdisplaceddetectortest rtkdisplaceddetectortest.cxx)
 TARGET_LINK_LIBRARIES(rtkdisplaceddetectortest RTK)
 ADD_TEST(rtkdisplaceddetectortest ${EXECUTABLE_OUTPUT_PATH}/rtkdisplaceddetectortest)
@@ -36,11 +39,24 @@ ADD_TEST(rtkshortscantest ${EXECUTABLE_OUTPUT_PATH}/rtkshortscantest)
 ADD_EXECUTABLE(rtkrampfiltertest rtkrampfiltertest.cxx)
 TARGET_LINK_LIBRARIES(rtkrampfiltertest RTK)
 ADD_TEST(rtkrampfiltertest ${EXECUTABLE_OUTPUT_PATH}/rtkrampfiltertest)
+IF(CUDA_FOUND AND CUDA_HAVE_GPU)
+  ADD_EXECUTABLE(rtkrampfiltercudatest rtkrampfiltertest.cxx)
+  TARGET_LINK_LIBRARIES(rtkrampfiltercudatest RTK rtkcuda)
+  SET_TARGET_PROPERTIES(rtkrampfiltercudatest PROPERTIES COMPILE_FLAGS -DUSE_CUDA)
+  ADD_TEST(rtkrampfiltercudatest ${EXECUTABLE_OUTPUT_PATH}/rtkrampfiltercudatest)
+ENDIF(CUDA_FOUND AND CUDA_HAVE_GPU)
 
 ADD_EXECUTABLE(rtkrampfilternofftwtest rtkrampfiltertest.cxx)
 SET_TARGET_PROPERTIES(rtkrampfilternofftwtest PROPERTIES COMPILE_FLAGS -DRAMP_FILTER_TEST_WITHOUT_FFTW)
 TARGET_LINK_LIBRARIES(rtkrampfilternofftwtest RTK)
-ADD_TEST(rtkrampfiltertest ${EXECUTABLE_OUTPUT_PATH}/rtkrampfiltertest)
+ADD_TEST(rtkrampfilternofftwtest ${EXECUTABLE_OUTPUT_PATH}/rtkrampfilternofftwtest)
+IF(CUDA_FOUND AND CUDA_HAVE_GPU)
+  ADD_EXECUTABLE(rtkrampfilternofftwcudatest rtkrampfiltertest.cxx)
+  TARGET_LINK_LIBRARIES(rtkrampfilternofftwcudatest RTK rtkcuda)
+  SET_TARGET_PROPERTIES(rtkrampfilternofftwcudatest PROPERTIES COMPILE_FLAGS "-DUSE_CUDA -DRAMP_FILTER_TEST_WITHOUT_FFTW")
+  ADD_TEST(rtkrampfilternofftwcudatest ${EXECUTABLE_OUTPUT_PATH}/rtkrampfilternofftwcudatest)
+ENDIF(CUDA_FOUND AND CUDA_HAVE_GPU)
+
 
 ADD_EXECUTABLE(rtkRaycastInterpolatorForwardProjectionTest rtkRaycastInterpolatorForwardProjectionTest.cxx)
 TARGET_LINK_LIBRARIES(rtkRaycastInterpolatorForwardProjectionTest RTK)
@@ -67,6 +83,14 @@ ADD_TEST(rtkTestReg23ProjectionGeometry ${EXECUTABLE_OUTPUT_PATH}/rtkTestReg23Pr
 ADD_EXECUTABLE(rtkfovtest rtkfovtest.cxx)
 TARGET_LINK_LIBRARIES(rtkfovtest RTK)
 ADD_TEST(rtkfovtest ${EXECUTABLE_OUTPUT_PATH}/rtkfovtest)
+
+ADD_EXECUTABLE(rtkbinningtest rtkbinningtest.cxx)
+TARGET_LINK_LIBRARIES(rtkbinningtest RTK)
+ADD_TEST(rtkbinningtest ${EXECUTABLE_OUTPUT_PATH}/rtkbinningtest)
+
+ADD_EXECUTABLE(rtkmediantest rtkmediantest.cxx)
+TARGET_LINK_LIBRARIES(rtkmediantest RTK)
+ADD_TEST(rtkmediantest ${EXECUTABLE_OUTPUT_PATH}/rtkmediantest)
 
 ADD_EXECUTABLE(rtkamsterdamshroudtest rtkamsterdamshroudtest.cxx)
 TARGET_LINK_LIBRARIES(rtkamsterdamshroudtest RTK)
@@ -108,6 +132,14 @@ RTK_ADD_TEST(NAME rtkdigisenstest
              COMMAND ${EXECUTABLE_OUTPUT_PATH}/rtkdigisenstest
              DATA{Data/Input/Digisens/ima0010.tif,calibration.cal},
              DATA{Data/Baseline/Digisens/attenuation.mha,geometry.xml})
+
+ADD_EXECUTABLE(rtkxradtest rtkxradtest.cxx)
+TARGET_LINK_LIBRARIES(rtkxradtest RTK)
+RTK_ADD_TEST(NAME rtkxradtest 
+             WORKING_DIRECTORY ${RTK_DATA_ROOT}/Input/XRad
+             COMMAND ${EXECUTABLE_OUTPUT_PATH}/rtkxradtest
+             DATA{Data/Input/XRad/flat.header,flat.img,dark.header,dark.img,SolidWater_HiGain1x1.header,SolidWater_HiGain1x1_firstProj.header,SolidWater_HiGain1x1_firstProj.img}
+             DATA{Data/Baseline/XRad/geometry.xml,attenuation.mha})
 
 ADD_EXECUTABLE(rtkprojectgeometricphantomtest rtkprojectgeometricphantomtest.cxx)
 TARGET_LINK_LIBRARIES(rtkprojectgeometricphantomtest RTK)

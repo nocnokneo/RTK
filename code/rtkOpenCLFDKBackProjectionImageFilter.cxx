@@ -16,6 +16,7 @@
  *
  *=========================================================================*/
 
+#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
 #include "rtkOpenCLFDKBackProjectionImageFilter.h"
 
 #include <itkImageRegionConstIterator.h>
@@ -158,7 +159,7 @@ OpenCLFDKBackProjectionImageFilter
   for(unsigned int iProj=iFirstProj; iProj<iFirstProj+nProj; iProj++)
     {
     // Extract the current slice
-    ProjectionImagePointer projection = this->GetProjection(iProj);
+    ProjectionImagePointer projection = this->GetProjection<ProjectionImageType>(iProj);
 
     // Index to index matrix normalized to have a correct backprojection weight
     // (1 at the isocenter)

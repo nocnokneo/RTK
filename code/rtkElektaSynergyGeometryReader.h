@@ -21,6 +21,7 @@
 
 #include <itkLightProcessObject.h>
 #include "rtkThreeDCircularProjectionGeometry.h"
+#include "rtkWin32Header.h"
 
 namespace rtk
 {
@@ -29,11 +30,13 @@ namespace rtk
  *
  * Creates a 3D circular geometry from the Elekta database input. 
  *
+ * \test rtkelektatest.cxx
+ *
  * \author Simon Rit
  *
  * \ingroup IOFilters
  */
-class ElektaSynergyGeometryReader :
+class RTK_EXPORT ElektaSynergyGeometryReader :
   public itk::LightProcessObject
 {
 public:

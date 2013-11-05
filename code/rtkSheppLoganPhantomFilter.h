@@ -33,6 +33,11 @@ namespace rtk
  * in order to create the projections of a Shepp-Logan phantom resized
  * to m_PhantoScale ( default 128 ).
  *
+ * \test rtkRaycastInterpolatorForwardProjectionTest.cxx,
+ * rtkprojectgeometricphantomtest.cxx, rtkfdktest.cxx, rtkrampfiltertest.cxx,
+ * rtkforwardprojectiontest.cxx, rtkdisplaceddetectortest.cxx,
+ * rtkshortscantest.cxx
+ *
  * \author Marc Vila
  *
  * \ingroup InPlaceImageFilter
@@ -47,24 +52,21 @@ public:
   typedef RayEllipsoidIntersectionImageFilter<TInputImage,TOutputImage> Superclass;
   typedef itk::SmartPointer<Self>                                       Pointer;
   typedef itk::SmartPointer<const Self>                                 ConstPointer;
-  typedef typename TOutputImage::RegionType               OutputImageRegionType;
-  typedef typename TOutputImage::Superclass::ConstPointer OutputImageBaseConstPointer;
+  typedef typename TOutputImage::RegionType                             OutputImageRegionType;
+  typedef typename TOutputImage::Superclass::ConstPointer               OutputImageBaseConstPointer;
 
-  typedef float OutputPixelType;
-
-  typedef itk::Image< OutputPixelType, 3 >                                           OutputImageType;
-  typedef rtk::RayEllipsoidIntersectionImageFilter<OutputImageType, OutputImageType> REIType;
-  typedef std::vector<double>                                                        VectorType;
-  typedef std::string                                                                StringType;
-  typedef std::vector< std::vector<double> >                                         VectorOfVectorType;
-  struct FigureType
-  {
-    FigureType():angle(0.),attenuation(0.){};
-    VectorType semiprincipalaxis;
-    VectorType center;
-    double angle;
-    double attenuation;
-    };
+  typedef Superclass                                                    REIType;
+//  typedef itk::Vector<double,3>                                         VectorType;
+  typedef std::string                                                   StringType;
+  typedef std::vector< std::vector<double> >                            VectorOfVectorType;
+//  struct FigureType
+//  {
+//    FigureType():angle(0.),attenuation(0.){};
+//    VectorType semiprincipalaxis;
+//    VectorType center;
+//    double angle;
+//    double attenuation;
+//    };
   /** Method for creation through the object factory. */
   itkNewMacro(Self);
 

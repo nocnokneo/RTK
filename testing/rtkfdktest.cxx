@@ -16,9 +16,13 @@
 #endif
 
 template<class TImage>
+#if FAST_TESTS_NO_CHECKS
+void CheckImageQuality(typename TImage::Pointer itkNotUsed(recon), typename TImage::Pointer itkNotUsed(ref))
+{
+}
+#else
 void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer ref)
 {
-#if !(FAST_TESTS_NO_CHECKS)
   typedef itk::ImageRegionConstIterator<TImage> ImageIteratorType;
   ImageIteratorType itTest( recon, recon->GetBufferedRegion() );
   ImageIteratorType itRef( ref, ref->GetBufferedRegion() );
@@ -65,15 +69,32 @@ void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer 
               << PSNR << " instead of 26" << std::endl;
     exit( EXIT_FAILURE);
   }
-#endif
 }
+#endif
 
+/**
+ * \file rtkfdktest.cxx
+ *
+ * \brief Functional test for classes performing FDK reconstructions
+ *
+ * This test generates the projections of a simulated Shepp-Logan phantom.
+ * A CT image is reconstructed from each set of generated projection images
+ * using the FDK algorithm and the reconstructed CT image is compared to the
+ * expected results which is analytically computed.
+ *
+ * \author Simon Rit and Marc Vila
+ */
 
 int main(int, char** )
 {
   const unsigned int Dimension = 3;
   typedef float                                    OutputPixelType;
+#ifdef USE_CUDA
+  typedef itk::CudaImage< OutputPixelType, Dimension > OutputImageType;
+#else
   typedef itk::Image< OutputPixelType, Dimension > OutputImageType;
+#endif
+
 #if FAST_TESTS_NO_CHECKS
   const unsigned int NumberOfProjectionImages = 3;
 #else
@@ -205,7 +226,7 @@ int main(int, char** )
   CheckImageQuality<OutputImageType>(fov->GetOutput(), dsl->GetOutput());
   std::cout << "Test PASSED! " << std::endl;
 
-  std::cout << "\n\n****** Case 3: 45 degree tilt direction ******" << std::endl;
+   std::cout << "\n\n****** Case 3: 45 degree tilt direction ******" << std::endl;
 
   direction[0][0] = 0.70710678118;
   direction[0][1] = -0.70710678118;
@@ -236,10 +257,23 @@ int main(int, char** )
   StreamingType::Pointer streamer = StreamingType::New();
   streamer->SetInput(0, fov->GetOutput());
   streamer->SetNumberOfStreamDivisions(8);
-  streamer->Update();
+  TRY_AND_EXIT_ON_ITK_EXCEPTION( streamer->Update() );
 
   CheckImageQuality<OutputImageType>(streamer->GetOutput(), dsl->GetOutput());
   std::cout << "Test PASSED! " << std::endl;
 
+  std::cout << "\n\n****** Case 5: small ROI ******" << std::endl;
+  origin[0] = -5.;
+  origin[1] = -13.;
+  origin[2] = -20.;
+  size[0] = 64;
+  size[1] = 64;
+  size[2] = 64;
+  tomographySource->SetOrigin( origin );
+  tomographySource->SetSize( size );
+  TRY_AND_EXIT_ON_ITK_EXCEPTION( fov->UpdateLargestPossibleRegion() );
+  TRY_AND_EXIT_ON_ITK_EXCEPTION( dsl->UpdateLargestPossibleRegion() )
+  CheckImageQuality<OutputImageType>(fov->GetOutput(), dsl->GetOutput());
+  std::cout << "Test PASSED! " << std::endl;
   return EXIT_SUCCESS;
 }

@@ -8,9 +8,13 @@
 #include "rtkBackProjectionImageFilter.h"
 
 template<class TImage>
+#if FAST_TESTS_NO_CHECKS
+void CheckImageQuality(typename TImage::Pointer itkNotUsed(recon), typename TImage::Pointer itkNotUsed(ref))
+{
+}
+#else
 void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer ref)
 {
-#if !(FAST_TESTS_NO_CHECKS)
   typedef itk::ImageRegionConstIterator<TImage> ImageIteratorType;
   ImageIteratorType itTest( recon, recon->GetBufferedRegion() );
   ImageIteratorType itRef( ref, ref->GetBufferedRegion() );
@@ -57,9 +61,21 @@ void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer 
               << PSNR << " instead of 23.5" << std::endl;
     exit( EXIT_FAILURE);
   }
-#endif
 }
+#endif
 
+/**
+ * \file rtkfovtest.cxx
+ *
+ * \brief Functional test for classes in charge of creating a FOV (Field Of
+ * View) mask
+ *
+ * This test generates a FOV mask that can be used after a reconstruction.
+ * The generated results are compared to the expected results, which are
+ * created with a threshold in the backprojection images of the volume.
+ *
+ * \author Simon Rit and Marc Vila
+ */
 
 int main(int , char** )
 {
@@ -136,6 +152,8 @@ int main(int , char** )
   projectionsSource->SetSize( size );
   projectionsSource->SetConstant( 1. );
 
+  std::cout << "\n\n****** Case 1: centered detector ******" << std::endl;
+
   // Geometry
   typedef rtk::ThreeDCircularProjectionGeometry GeometryType;
   GeometryType::Pointer geometry = GeometryType::New();
@@ -166,6 +184,20 @@ int main(int , char** )
   threshold->SetUpperThreshold(NumberOfProjectionImages+0.5);
   threshold->SetInsideValue(1.);
   TRY_AND_EXIT_ON_ITK_EXCEPTION( threshold->Update() );
+
+  CheckImageQuality<OutputImageType>(fov->GetOutput(), threshold->GetOutput());
+  std::cout << "\n\nTest PASSED! " << std::endl;
+
+  std::cout << "\n\n****** Case 2: offset detector ******" << std::endl;
+
+  origin[0] = -54.;
+  projectionsSource->SetOrigin( origin );
+  size[0] = 78;
+  projectionsSource->SetSize( size );
+  projectionsSource->UpdateOutputInformation();
+  projectionsSource->UpdateLargestPossibleRegion();
+  fov->SetDisplacedDetector(true);
+  fov->Update();
 
   CheckImageQuality<OutputImageType>(fov->GetOutput(), threshold->GetOutput());
   std::cout << "\n\nTest PASSED! " << std::endl;

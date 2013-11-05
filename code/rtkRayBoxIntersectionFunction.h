@@ -33,7 +33,13 @@ namespace rtk
  * image coordinate system. The ray origin must be set first. The direction
  * of the ray is then passed to the Evaluate function. It returns false if
  * there is no intersection. It returns true otherwise and the nearest and
- * farthest distance/point may be accessed.
+ * farthest distance/point may be accessed. Nearest and farthest distance are
+ * defined such that NearestDistance < FarthestDistance.
+ *
+ * The default behavior of the function is to return the intersection between
+ * the line defined by the origin and direction. You need to modify the
+ * nearest and farthest distance if you want to account for the position of the
+ * source and the detector along the ray.
  *
  * \author Simon Rit
  *
@@ -43,8 +49,8 @@ template <
 class TCoordRep = double,
 unsigned int VBoxDimension=3
 >
-class ITK_EXPORT RayBoxIntersectionFunction :
-    public itk::Object
+class ITK_EXPORT RayBoxIntersectionFunction:
+    public itk::LightObject
 {
 public:
   /** Standard class typedefs. */
@@ -73,25 +79,27 @@ public:
 
   /** Get / Set the box inferior corner. Every coordinate must be inferior to
    * those of the superior corner. */
-  itkGetMacro(BoxMin, VectorType);
-  itkSetMacro(BoxMin, VectorType);
+  virtual VectorType GetBoxMin() { return this->m_BoxMin; }
+  virtual void SetBoxMin(const VectorType _arg) { m_BoxMin = _arg; }
 
   /** Get / Set the box superior corner. Every coordinate must be superior to
    * those of the inferior corner. */
-  itkGetMacro(BoxMax, VectorType);
-  itkSetMacro(BoxMax, VectorType);
+  virtual VectorType GetBoxMax() { return this->m_BoxMax; }
+  virtual void SetBoxMax(const VectorType _arg) { m_BoxMax = _arg; }
 
   /** Get / Set the ray origin. */
-  itkGetMacro(RayOrigin, VectorType);
-  itkSetMacro(RayOrigin, VectorType);
+  virtual VectorType GetRayOrigin() { return this->m_RayOrigin; }
+  virtual void SetRayOrigin(const VectorType _arg) { m_RayOrigin = _arg; }
 
   /** Get the distance with the nearest intersection.
     * \warning Only relevant if called after Evaluate. */
-  itkGetMacro(NearestDistance, TCoordRep);
+  virtual TCoordRep GetNearestDistance() { return this->m_NearestDistance; }
+  virtual void SetNearestDistance(const TCoordRep _arg) { m_NearestDistance = _arg; }
 
   /** Get the distance with the farthest intersection.
     * \warning Only relevant if called after Evaluate. */
-  itkGetMacro(FarthestDistance, TCoordRep);
+  virtual TCoordRep GetFarthestDistance() { return this->m_FarthestDistance; }
+  virtual void SetFarthestDistance(const TCoordRep _arg) { m_FarthestDistance = _arg; }
 
   /** Get the nearest point coordinates.
     * \warning Only relevant if called after Evaluate. */

@@ -20,6 +20,10 @@
 #define __rtkCudaBackProjectionImageFilter_h
 
 #include "rtkBackProjectionImageFilter.h"
+#include "rtkWin32Header.h"
+
+#include <itkCudaImage.h>
+#include <itkCudaInPlaceImageFilter.h>
 
 namespace rtk
 {
@@ -31,58 +35,43 @@ namespace rtk
  * [Feldkamp, Davis, Kress, 1984] algorithm for filtered backprojection
  * reconstruction of cone-beam CT images with a circular source trajectory.
  *
+ * \test rtksarttest.cxx
+ *
  * \author Simon Rit
  *
  * \ingroup Projector CudaImageToImageFilter
  */
-class ITK_EXPORT CudaBackProjectionImageFilter :
-  public BackProjectionImageFilter< itk::Image<float,3>, itk::Image<float,3> >
+class CudaBackProjectionImageFilter :
+  public itk::CudaInPlaceImageFilter< itk::CudaImage<float,3>, itk::CudaImage<float,3>,
+  BackProjectionImageFilter< itk::CudaImage<float,3>, itk::CudaImage<float,3> > >
 {
 public:
   /** Standard class typedefs. */
-  typedef itk::Image<float,3>                                ImageType;
+  typedef itk::CudaImage<float,3>                            ImageType;
   typedef CudaBackProjectionImageFilter                      Self;
   typedef BackProjectionImageFilter<ImageType, ImageType>    Superclass;
   typedef itk::SmartPointer<Self>                            Pointer;
   typedef itk::SmartPointer<const Self>                      ConstPointer;
 
   typedef ImageType::RegionType            OutputImageRegionType;
-  typedef itk::Image<float, 2>             ProjectionImageType;
+  typedef itk::CudaImage<float, 2>         ProjectionImageType;
   typedef ProjectionImageType::Pointer     ProjectionImagePointer;
 
   /** Method for creation through the object factory. */
   itkNewMacro(Self);
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro(CudaBackProjectionImageFilter, ImageToImageFilter);
-
-  /** Function to allocate memory on device */
-  void InitDevice();
-
-  /** Function to synchronize memory from device to host and free device memory */
-  void CleanUpDevice();
-
-  /** Boolean to keep the hand on the memory management of the GPU. Default is
-   * off. If on, the user must call manually InitDevice and CleanUpDevice. */
-  itkGetMacro(ExplicitGPUMemoryManagementFlag, bool);
-  itkSetMacro(ExplicitGPUMemoryManagementFlag, bool);
+  itkTypeMacro(CudaBackProjectionImageFilter, BackProjectionImageFilter);
 
 protected:
-  CudaBackProjectionImageFilter();
+  rtkcuda_EXPORT CudaBackProjectionImageFilter();
   virtual ~CudaBackProjectionImageFilter() {};
 
-  void GenerateData();
+  void GPUGenerateData();
 
 private:
   CudaBackProjectionImageFilter(const Self&); //purposely not implemented
   void operator=(const Self&);                   //purposely not implemented
-
-  bool       m_ExplicitGPUMemoryManagementFlag;
-  int        m_VolumeDimension[3];
-  int        m_ProjectionDimension[2];
-  float *    m_DeviceVolume;
-  float *    m_DeviceProjection;
-  float *    m_DeviceMatrix;
 };
 
 } // end namespace rtk

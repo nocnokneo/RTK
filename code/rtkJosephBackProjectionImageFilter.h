@@ -31,12 +31,14 @@ namespace rtk
  * This is expected to be slow compared to VoxelBasedBackProjectionImageFilter
  * because anti-aliasing strategy is required, i.e., doing two backprojections.
  *
+ * \test rtksarttest.cxx
+ *
  * \author Simon Rit
  *
  * \ingroup Projector
  */
 template <class TInputImage, class TOutputImage>
-class ITK_EXPORT JosephBackProjectionImageFilter :
+class JosephBackProjectionImageFilter :
   public BackProjectionImageFilter<TInputImage,TOutputImage>
 {
 public:

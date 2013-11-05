@@ -32,6 +32,9 @@ namespace rtk
  *
  * The filter uses RayBoxIntersectionFunction.
  *
+ * \test rtkRaycastInterpolatorForwardProjectionTest.cxx,
+ * rtkforwardprojectiontest.cxx
+ *
  * \author Simon Rit
  *
  * \ingroup InPlaceImageFilter
@@ -76,9 +79,13 @@ public:
   /** Set the box from an image */
   void SetBoxMax(VectorType _boxMax);
 
+  /** Get / Set the multiplicative constant of the volume */
+  itkGetMacro(Density, double);
+  itkSetMacro(Density, double);
+
 
 protected:
-  RayBoxIntersectionImageFilter() : m_RBIFunctor( RBIFunctionType::New() ), m_Geometry(NULL) { }
+  RayBoxIntersectionImageFilter() : m_RBIFunctor(RBIFunctionType::New()), m_Geometry(NULL), m_Density(1.) {}
   virtual ~RayBoxIntersectionImageFilter() {};
 
   /** Apply changes to the input image requested region. */
@@ -97,6 +104,8 @@ private:
 
   /** RTK geometry object */
   GeometryPointer m_Geometry;
+
+  double m_Density;
 };
 
 } // end namespace rtk

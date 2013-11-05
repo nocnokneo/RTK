@@ -36,6 +36,8 @@ namespace rtk
  * InPlaneAngle. The rest is accounted for but the fov is assumed to be
  * cylindrical.
  *
+ * \test rtkfovtest.cxx, rtkfdktest.cxx, rtkmotioncompensatedfdktest.cxx
+ *
  * \author Marc Vila
  *
  * \ingroup InPlaceImageFilter
@@ -68,7 +70,7 @@ public:
   itkSetMacro(Geometry, GeometryPointer);
 
   /** Get / Set of the member Mask. If set, all the pixels in the field of view
-   * are set to 1. The data value is left otherwise. Pixels outside the mask
+   * are set to 1. The data value is kept otherwise. Pixels outside the mask
    * are set to 0 in any case. */
   itkGetMacro(Mask, bool);
   itkSetMacro(Mask, bool);
@@ -78,6 +80,11 @@ public:
     data are therefore not updated. */
   itkGetMacro(ProjectionsStack, ProjectionsStackPointer);
   itkSetMacro(ProjectionsStack, ProjectionsStackPointer);
+
+  /** Assume that a displaced detector image filter, e.g.,
+   * rtk::DisplacedDetectorImageFilter, has been used. */
+  itkGetMacro(DisplacedDetector, bool);
+  itkSetMacro(DisplacedDetector, bool);
 
 protected:
   FieldOfViewImageFilter();
@@ -101,6 +108,7 @@ private:
   double                  m_HatTangentSup;
   double                  m_HatHeightInf;
   double                  m_HatHeightSup;
+  bool                    m_DisplacedDetector;
 };
 
 } // end namespace rtk

@@ -21,6 +21,7 @@
 
 #include <itkLightProcessObject.h>
 #include "rtkThreeDCircularProjectionGeometry.h"
+#include "rtkWin32Header.h"
 
 namespace rtk
 {
@@ -30,11 +31,13 @@ namespace rtk
  * Creates a 3D circular geometry from an xml file created by the calibration
  * software developed by the Digisens company.
  *
+ * \test rtkdigisenstest.cxx
+ *
  * \author Simon Rit
  *
  * \ingroup IOFilters
  */
-class DigisensGeometryReader :
+class RTK_EXPORT DigisensGeometryReader :
   public itk::LightProcessObject
 {
 public:

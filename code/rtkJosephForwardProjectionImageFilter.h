@@ -52,7 +52,7 @@ public:
                              const double itkNotUsed(stepLengthInVoxel),
                              const TCoordRepType weight,
                              const TInput *p,
-                             const unsigned int i ) const
+                             const int i ) const
   {
     return weight*p[i];
   }
@@ -102,7 +102,11 @@ public:
  * \brief Joseph forward projection.
  *
  * Performs a forward projection, i.e. accumulation along x-ray lines,
- * using [Joseph, IEEE TMI, 1982].
+ * using [Joseph, IEEE TMI, 1982]. The forward projector tests if the  detector
+ * has been placed after the source and the volume. If the detector is in the volume
+ * the ray tracing is performed only until that point.
+ *
+ * \test rtkforwardprojectiontest.cxx
  *
  * \author Simon Rit
  *
@@ -178,8 +182,8 @@ protected:
                                                const InputPixelType *pxsys,
                                                const double x,
                                                const double y,
-                                               const unsigned int ox,
-                                               const unsigned int oy);
+                                               const int ox,
+                                               const int oy);
 
 private:
   JosephForwardProjectionImageFilter(const Self&); //purposely not implemented

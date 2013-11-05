@@ -20,6 +20,7 @@
 #define __rtkBackProjectionImageFilter_txx
 
 #include "rtkHomogeneousMatrix.h"
+#include "rtkMacro.h"
 
 #include <itkImageRegionConstIterator.h>
 #include <itkImageRegionIteratorWithIndex.h>
@@ -65,14 +66,17 @@ BackProjectionImageFilter<TInputImage,TOutputImage>
   cornerSup[2] = reqRegion.GetIndex(2) + reqRegion.GetSize(2);
 
   // Go over each projection
-  int iFirstProj = reqRegion.GetIndex(Dimension-1);
-  int nProj = reqRegion.GetSize(Dimension-1);
+  const unsigned int nProj = this->GetInput(1)->GetLargestPossibleRegion().GetSize(Dimension-1);
+  const unsigned int iFirstProj = this->GetInput(1)->GetLargestPossibleRegion().GetIndex(Dimension-1);
   this->SetTranspose(false);
-  for(int iProj=iFirstProj; iProj<iFirstProj+nProj; iProj++)
+  for(unsigned int iProj=iFirstProj; iProj<iFirstProj+nProj; iProj++)
     {
     // Extract the current slice
     ProjectionMatrixType   matrix = GetIndexToIndexProjectionMatrix(iProj);
 
+    // Check which part of the projection image will be backprojected in the
+    // volume.
+    double firstPerspFactor = 0.;
     for(int cz=0; cz<2; cz++)
       for(int cy=0; cy<2; cy++)
         for(int cx=0; cx<2; cx++)
@@ -98,6 +102,19 @@ BackProjectionImageFilter<TInputImage,TOutputImage>
           perspFactor = 1/perspFactor;
           for(unsigned int i=0; i<Dimension-1; i++)
             point[i] = point[i]*perspFactor;
+
+          // Check if corners all have the same perspective factor sign.
+          // If not, source is too close for easily computing a smaller requested
+          // region than the largest possible one.
+          if(cx+cy+cz==0)
+            firstPerspFactor = perspFactor;
+          if(perspFactor*firstPerspFactor < 0.) // Change of sign
+            {
+            inputPtr1->SetRequestedRegion( inputPtr1->GetLargestPossibleRegion() );
+            return;
+            }
+
+          // Look for extremas on projection to calculate requested region
           for(int i=0; i<2; i++)
             {
             cornerInf[i] = vnl_math_min(cornerInf[i], point[i]);
@@ -148,7 +165,7 @@ BackProjectionImageFilter<TInputImage,TOutputImage>
   for(unsigned int iProj=iFirstProj; iProj<iFirstProj+nProj; iProj++)
     {
     // Extract the current slice
-    ProjectionImagePointer projection = GetProjection(iProj);
+    ProjectionImagePointer projection = GetProjection<ProjectionImageType>(iProj);
 
     ProjectionMatrixType   matrix = GetIndexToIndexProjectionMatrix(iProj);
     interpolator->SetInputImage(projection);
@@ -190,7 +207,8 @@ BackProjectionImageFilter<TInputImage,TOutputImage>
 }
 
 template <class TInputImage, class TOutputImage>
-typename BackProjectionImageFilter<TInputImage,TOutputImage>::ProjectionImagePointer
+template <class TProjectionImage>
+typename TProjectionImage::Pointer
 BackProjectionImageFilter<TInputImage,TOutputImage>
 ::GetProjection(const unsigned int iProj)
 {
@@ -199,12 +217,12 @@ BackProjectionImageFilter<TInputImage,TOutputImage>
 
   const int iProjBuff = stack->GetBufferedRegion().GetIndex(ProjectionImageType::ImageDimension);
 
-  ProjectionImagePointer projection = ProjectionImageType::New();
-  typename ProjectionImageType::RegionType region;
-  typename ProjectionImageType::SpacingType spacing;
-  typename ProjectionImageType::PointType origin;
+  typename TProjectionImage::Pointer projection = TProjectionImage::New();
+  typename TProjectionImage::RegionType region;
+  typename TProjectionImage::SpacingType spacing;
+  typename TProjectionImage::PointType origin;
 
-  for(unsigned int i=0; i<ProjectionImageType::ImageDimension; i++)
+  for(unsigned int i=0; i<TProjectionImage::ImageDimension; i++)
     {
     origin[i] = stack->GetOrigin()[i];
     spacing[i] = stack->GetSpacing()[i];
@@ -213,8 +231,8 @@ BackProjectionImageFilter<TInputImage,TOutputImage>
     }
   if(this->GetTranspose() )
     {
-    typename ProjectionImageType::SizeType size = region.GetSize();
-    typename ProjectionImageType::IndexType index = region.GetIndex();
+    typename TProjectionImage::SizeType size = region.GetSize();
+    typename TProjectionImage::IndexType index = region.GetIndex();
     std::swap(size[0], size[1]);
     std::swap(index[0], index[1]);
     std::swap(origin[0], origin[1]);

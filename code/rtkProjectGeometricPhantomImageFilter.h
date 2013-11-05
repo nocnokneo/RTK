@@ -26,6 +26,8 @@
 
 #include "rtkThreeDCircularProjectionGeometryXMLFile.h"
 #include "rtkRayEllipsoidIntersectionImageFilter.h"
+#include "rtkRayBoxIntersectionImageFilter.h"
+#include "itkAddImageFilter.h"
 
 #include <vector>
 
@@ -39,6 +41,8 @@ namespace rtk
  * in order to create the projections of a specific phantom which is
  * specified in a configuration file following the convention of
  * http://www.slaney.org/pct/pct-errata.html
+ *
+ * \test rtkprojectgeometricphantomtest.cxx
  *
  * \author Marc Vila
  *
@@ -54,14 +58,16 @@ public:
   typedef RayEllipsoidIntersectionImageFilter<TInputImage,TOutputImage> Superclass;
   typedef itk::SmartPointer<Self>                                       Pointer;
   typedef itk::SmartPointer<const Self>                                 ConstPointer;
-  typedef typename TOutputImage::RegionType               OutputImageRegionType;
-  typedef typename TOutputImage::Superclass::ConstPointer OutputImageBaseConstPointer;
+  typedef typename TOutputImage::RegionType                             OutputImageRegionType;
+  typedef typename TOutputImage::Superclass::ConstPointer               OutputImageBaseConstPointer;
 
   typedef float OutputPixelType;
 
-  typedef itk::Image< OutputPixelType, 3 >                                           OutputImageType;
+  typedef TOutputImage                                                               OutputImageType;
   typedef rtk::RayEllipsoidIntersectionImageFilter<OutputImageType, OutputImageType> REIType;
-  typedef std::vector<double>                                                        VectorType;
+  typedef rtk::RayBoxIntersectionImageFilter<OutputImageType, OutputImageType>       RBIType;
+  typedef itk::AddImageFilter <TOutputImage, TOutputImage, TOutputImage>             AddImageFilterType;
+  typedef itk::Vector<double, 3>                                                     VectorType;
   typedef std::string                                                                StringType;
   typedef std::vector< std::vector<double> >                                         VectorOfVectorType;
   typedef rtk::GeometricPhantomFileReader                                            CFRType;
@@ -75,6 +81,13 @@ public:
   /** Get/Set Number of Figures.*/
   itkSetMacro(ConfigFile, StringType);
   itkGetMacro(ConfigFile, StringType);
+
+//  struct FigureType
+//  {
+//    //FigureType():angle(0.),density(0.){};
+//    VectorOfVectorType       parameters;
+//    std::vector<std::string> figure;
+//  };
 
   virtual VectorOfVectorType GetFig ();
   virtual void SetFig (const VectorOfVectorType _arg);
@@ -93,8 +106,8 @@ private:
   ProjectGeometricPhantomImageFilter(const Self&); //purposely not implemented
   void operator=(const Self&);            //purposely not implemented
 
-  VectorOfVectorType       m_Fig;
-  StringType               m_ConfigFile;
+  VectorOfVectorType     m_Fig;
+  StringType             m_ConfigFile;
 };
 
 } // end namespace rtk

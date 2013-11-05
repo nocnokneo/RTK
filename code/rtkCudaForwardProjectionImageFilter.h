@@ -20,6 +20,10 @@
 #define __rtkCudaForwardProjectionImageFilter_h
 
 #include "rtkJosephForwardProjectionImageFilter.h"
+#include "itkCudaInPlaceImageFilter.h"
+#include "itkCudaUtil.h"
+#include "itkCudaKernelManager.h"
+
 
 /** \class CudaForwardProjectionImageFilter
  * \brief TODO
@@ -34,20 +38,23 @@
 namespace rtk
 {
 
+/** Create a helper Cuda Kernel class for CudaImageOps */
+itkCudaKernelClassMacro(rtkCudaForwardProjectionImageFilterKernel);
+
 class ITK_EXPORT CudaForwardProjectionImageFilter :
-  public ForwardProjectionImageFilter< itk::Image<float,3>, itk::Image<float,3> >
+  public itk::CudaInPlaceImageFilter< itk::CudaImage<float,3>, itk::CudaImage<float,3>,
+  ForwardProjectionImageFilter< itk::CudaImage<float,3>, itk::CudaImage<float,3> > >
 {
 public:
   /** Standard class typedefs. */
-  typedef itk::Image<float,3>                                ImageType;
-  typedef CudaForwardProjectionImageFilter                   Self;
-  typedef ForwardProjectionImageFilter<ImageType, ImageType> Superclass;
-  typedef itk::SmartPointer<Self>                            Pointer;
-  typedef itk::SmartPointer<const Self>                      ConstPointer;
+  typedef itk::CudaImage<float,3>                                        ImageType;
+  typedef CudaForwardProjectionImageFilter                               Self;
+  typedef ForwardProjectionImageFilter<ImageType, ImageType>             Superclass;
+  typedef itk::CudaInPlaceImageFilter<ImageType, ImageType, Superclass > GPUSuperclass;
+  typedef itk::SmartPointer<Self>                                        Pointer;
+  typedef itk::SmartPointer<const Self>                                  ConstPointer;
 
   typedef ImageType::RegionType        OutputImageRegionType;
-  typedef itk::Image<float, 2>         ProjectionImageType;
-  typedef ProjectionImageType::Pointer ProjectionImagePointer;
   typedef itk::Vector<float,3>         VectorType;
 
   /** Method for creation through the object factory. */
@@ -71,7 +78,7 @@ protected:
   CudaForwardProjectionImageFilter();
   ~CudaForwardProjectionImageFilter() {};
 
-  void GenerateData();
+  void GPUGenerateData();
 
 private:
   //purposely not implemented

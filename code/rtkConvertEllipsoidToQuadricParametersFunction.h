@@ -25,7 +25,7 @@
 namespace rtk
 {
 
-/** \class RegularToQuadricFunction
+/** \class ConvertEllipsoidToQuadricParametersFunction
  * \brief Converts ellipsoid parameters to quadric parameters.
  *
  * Converts ellipsoid parameters, i.e., semi-principal axes, center and
@@ -35,6 +35,7 @@ namespace rtk
  *
  * \ingroup Geometry
  */
+
 class ConvertEllipsoidToQuadricParametersFunction :
     public itk::Object
 {
@@ -51,8 +52,9 @@ public:
   itkTypeMacro(ConvertEllipsoidToQuadricParametersFunction, itk::Object);
 
   /** Useful defines. */
-  typedef std::vector<double>                VectorType;
+  typedef itk::Vector<double,3>              VectorType;
   typedef std::vector< std::vector<double> > VectorOfVectorType;
+  typedef std::string                        StringType;
 
   bool Translate( const VectorType& input );
   bool Rotate( const double input1, const VectorType& input2 );
@@ -87,6 +89,9 @@ public:
   itkGetMacro(RotationAngle, double);
   itkSetMacro(RotationAngle, double);
 
+  itkSetMacro(Figure, StringType);
+  itkGetMacro(Figure, StringType);
+
 protected:
 
   /// Constructor
@@ -96,23 +101,24 @@ protected:
   ~ConvertEllipsoidToQuadricParametersFunction() {};
 
   /** Corners of the image Quadric */
-  double m_SemiPrincipalAxisX;
-  double m_SemiPrincipalAxisY;
-  double m_SemiPrincipalAxisZ;
-  double m_CenterX;
-  double m_CenterY;
-  double m_CenterZ;
-  double m_RotationAngle;
-  double m_A;
-  double m_B;
-  double m_C;
-  double m_D;
-  double m_E;
-  double m_F;
-  double m_G;
-  double m_H;
-  double m_I;
-  double m_J;
+  double     m_SemiPrincipalAxisX;
+  double     m_SemiPrincipalAxisY;
+  double     m_SemiPrincipalAxisZ;
+  double     m_CenterX;
+  double     m_CenterY;
+  double     m_CenterZ;
+  double     m_RotationAngle;
+  double     m_A;
+  double     m_B;
+  double     m_C;
+  double     m_D;
+  double     m_E;
+  double     m_F;
+  double     m_G;
+  double     m_H;
+  double     m_I;
+  double     m_J;
+  StringType m_Figure;
 
 private:
   ConvertEllipsoidToQuadricParametersFunction( const Self& ); //purposely not implemented

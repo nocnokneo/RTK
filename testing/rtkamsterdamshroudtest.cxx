@@ -1,23 +1,25 @@
-#include "rtkMacro.h"
 #include "rtkTestConfiguration.h"
-#include "itkImageFileReader.h"
+
+#include <itkImageFileReader.h>
+#include <itkPasteImageFilter.h>
+
 #include "rtkAmsterdamShroudImageFilter.h"
 #include "rtkConstantImageSource.h"
-#include <iomanip>
-#include <fstream>
-
 #include "rtkTestConfiguration.h"
 #include "rtkThreeDCircularProjectionGeometryXMLFile.h"
-#include "rtkProjectGeometricPhantomImageFilter.h"
-#include "itkPasteImageFilter.h"
+#include "rtkRayEllipsoidIntersectionImageFilter.h"
 #include "rtkConfiguration.h"
 #include "rtkReg1DExtractShroudSignalImageFilter.h"
 #include "rtkDPExtractShroudSignalImageFilter.h"
 
 template<class TInputImage>
+#if FAST_TESTS_NO_CHECKS
+void CheckImageQuality(typename TInputImage::Pointer itkNotUsed(recon), typename TInputImage::Pointer itkNotUsed(ref))
+{
+}
+#else
 void CheckImageQuality(typename TInputImage::Pointer recon, typename TInputImage::Pointer ref)
 {
-#if !(FAST_TESTS_NO_CHECKS)
   typedef itk::ImageRegionConstIterator<TInputImage>  ImageIteratorInType;
   ImageIteratorInType itTest( recon, recon->GetBufferedRegion() );
   ImageIteratorInType itRef( ref, ref->GetBufferedRegion() );
@@ -65,9 +67,22 @@ void CheckImageQuality(typename TInputImage::Pointer recon, typename TInputImage
               << PSNR << " instead of 185" << std::endl;
     exit( EXIT_FAILURE);
   }
-#endif
 }
+#endif
 
+/**
+ * \file rtkamsterdamshroudtest.cxx
+ *
+ * \brief Functional test for classes performing Amsterdam Shroud and breathing signal extraction algorithms
+ *
+ * This test generates an Amsterdam Shroud image from a moving simulated phantom
+ * and extracts the breathing signal using two different methods, reg1D and D
+ * algorithms. The generated results are compared to the expected results,
+ * read from a baseline image in the MetaIO file format and hard-coded,
+ * respectively.
+ *
+ * \author Marc Vila
+ */
 int main(int, char** )
 {
   const unsigned int Dimension = 3;
@@ -134,10 +149,7 @@ int main(int, char** )
   PasteImageFilterType::Pointer pasteFilter = PasteImageFilterType::New();
 
   // Single projection
-  typedef rtk::ProjectGeometricPhantomImageFilter<OutputImageType, OutputImageType> PPCType;
-  PPCType::Pointer ppc = PPCType::New();
-
-  std::ofstream      myConfigFile;
+  typedef rtk::RayEllipsoidIntersectionImageFilter<OutputImageType, OutputImageType> REIType;
   double             size   = 80.;
   double             sinus  = 0.;
   const unsigned int Cycles = 4;
@@ -148,32 +160,87 @@ int main(int, char** )
     // Geometry object
     GeometryType::Pointer geometry = GeometryType::New();
     geometry->AddProjection(1200., 1500., i*360/sizeOutput[2]);
-    // Creating phantom config file for each projection
-    myConfigFile.open("phantom.txt");
-    myConfigFile <<"[Ellipsoid]  A=88.32 B=115.2 C=117.76 x=0 y=0 z=0 beta=0 gray=2.0\n"
-                 <<"[Ellipsoid]  A=35. B=" << size - sinus << " C=" << size - sinus << " x=-37. y=0 z=0 beta=0 gray=-1.98\n"
-                 <<"[Ellipsoid]  A=35. B=" << size - sinus << " C=" << size - sinus << " x=37.  y=0 z=0 beta=0 gray=-1.98\n"
-                 <<"[Ellipsoid]  A=8.  B=8.  C=8.  x=-40. y=0 z=0 beta=0 gray=1.42\n"
-                 << std::endl;
-    myConfigFile.close();
+
+    // Ellipse 1
+    REIType::Pointer e1 = REIType::New();
+    REIType::VectorType semiprincipalaxis, center;
+    semiprincipalaxis[0] = 88.32;
+    semiprincipalaxis[1] = 115.2;
+    semiprincipalaxis[2] = 117.76;
+    center[0] = 0.;
+    center[1] = 0.;
+    center[2] = 0.;
+    e1->SetInput(constantImageSourceSingleProjection->GetOutput());
+    e1->SetGeometry(geometry);
+    e1->SetDensity(2.);
+    e1->SetAxis(semiprincipalaxis);
+    e1->SetCenter(center);
+    e1->SetAngle(0.);
+    e1->InPlaceOff();
+    e1->Update();
+
+    // Ellipse 2
+    REIType::Pointer e2 = REIType::New();
+    semiprincipalaxis[0] = 35.;
+    semiprincipalaxis[1] = size - sinus;
+    semiprincipalaxis[2] = size - sinus;
+    center[0] = -37.;
+    center[1] = 0.;
+    center[2] = 0.;
+    e2->SetInput(e1->GetOutput());
+    e2->SetGeometry(geometry);
+    e2->SetDensity(-1.98);
+    e2->SetAxis(semiprincipalaxis);
+    e2->SetCenter(center);
+    e2->SetAngle(0.);
+    e2->Update();
+
+    // Ellipse 3
+    REIType::Pointer e3 = REIType::New();
+    semiprincipalaxis[0] = 35.;
+    semiprincipalaxis[1] = size - sinus;
+    semiprincipalaxis[2] = size - sinus;
+    center[0] = 37.;
+    center[1] = 0.;
+    center[2] = 0.;
+    e3->SetInput(e2->GetOutput());
+    e3->SetGeometry(geometry);
+    e3->SetDensity(-1.98);
+    e3->SetAxis(semiprincipalaxis);
+    e3->SetCenter(center);
+    e3->SetAngle(0.);
+    e3->Update();
+
+    // Ellipse 4
+    REIType::Pointer e4 = REIType::New();
+    semiprincipalaxis[0] = 8.;
+    semiprincipalaxis[1] = 8.;
+    semiprincipalaxis[2] = 8.;
+    center[0] = -40.;
+    center[1] = 0.;
+    center[2] = 0.;
+    e4->SetInput(e3->GetOutput());
+    e4->SetGeometry(geometry);
+    e4->SetDensity(1.42);
+    e4->SetAxis(semiprincipalaxis);
+    e4->SetCenter(center);
+    e4->SetAngle(0.);
 
     // Creating movement
     sinus = 15*sin( i*2*itk::Math::pi/(sizeOutput[2]/Cycles) );
+
     // Generating projection
-    ppc->SetInput(constantImageSourceSingleProjection->GetOutput());
-    ppc->SetGeometry(geometry);
-    ppc->SetConfigFile("phantom.txt");
-    ppc->Update();
+    e4->Update();
+
     // Adding each projection to volume
-    pasteFilter->SetSourceImage(ppc->GetOutput());
+    pasteFilter->SetSourceImage(e4->GetOutput());
     pasteFilter->SetDestinationImage(wholeImage);
-    pasteFilter->SetSourceRegion(ppc->GetOutput()->GetLargestPossibleRegion());
+    pasteFilter->SetSourceRegion(e4->GetOutput()->GetLargestPossibleRegion());
     pasteFilter->SetDestinationIndex(destinationIndex);
     pasteFilter->Update();
     wholeImage = pasteFilter->GetOutput();
     destinationIndex[2]++;
   }
-  itksys::SystemTools::RemoveFile("phantom.txt");
 
   std::cout << "\n\n****** Case 1: Amsterdam Shroud Image ******" << std::endl;
 
@@ -205,12 +272,16 @@ int main(int, char** )
 
 #if !(FAST_TESTS_NO_CHECKS)
   //Test Reference
-  float reg1D[100] = {0, -4, -7.625, -10.75, -13.25, -15, -15.75, -15.625, -14.5, -12.625, -9.875, -6.5, -2.875, 1, 5.5, 9.625, 13.625, 16.5,
-  18.625, 19.5, 19, 17.25, 14.375, 10.75, 6.375, 1.875, -2.5, -6.625, -10.25, -13.25, -15.25, -16.375, -16.375, -15.25, -13.375,
-  -10.625, -7.25, -3.625, 0, 3.625, 6.375, 8.75, 10.375, 12.25, 13.625, 13.625, 12.125, 9.5, 6.25, 2.625, -1.5, -5.625, -9.375,
-  -12.5, -15, -16.75, -17.5, -17.375, -16.25, -14.375, -11.625, -8.25, -4.625, -0.75, 3.75, 7.875, 11.875, 14.75, 16.875, 17.75,
-  17.25, 15.5, 12.625, 9, 4.625, 0.125, -4.25, -8.375, -12, -15, -17, -18.125, -18.125, -17, -15.125, -12.375, -9, -5.375, -1.75,
-  1.875, 4.625, 7, 8.625, 10.5, 11.875, 11.875, 10.375, 7.75, 4.5, 0.875};
+  float reg1D[100] = {0, 4.5, 8.625, 12.25, 15, 16.875, 17.625, 17.375, 16.125, 13.875, 10.75, 7.125,
+                      3, -1.25, -5.375, -9, -12.125, -14.25, -15.625, -16.125, -15.5, -13.75, -11, -7.5,
+                      -3.375, 1.125, 5.5, 9.5, 13, 15.875, 17.75, 18.625, 18.375, 17.25, 15, 11.875,
+                      8.125, 3.875, -0.625, -5, -8.875, -12.125, -14.25, -15.375, -15.375, -14.625,
+                      -12.875, -10.25, -6.875, -2.75, 1.625, 6, 10.125, 13.625, 16.375, 18.25, 19,
+                      18.75, 17.5, 15.25, 12.125, 8.5, 4.375, 0.125, -4, -7.625, -10.75, -12.875,
+                      -14.25, -14.75, -14.125, -12.375, -9.625, -6.125, -2, 2.5, 6.875, 10.875,
+                      14.375, 17.25, 19.125, 20, 19.75, 18.625, 16.375, 13.125, 9.375, 5.125,
+                      0.625, -3.75, -7.625, -10.875, -13, -14.125, -14.125, -13.375, -11.5,
+                      -8.875, -5.375, -1.25};
 
   //Checking for possible errors
   float zeroValue = 1e-12;
@@ -218,9 +289,7 @@ int main(int, char** )
   unsigned int i = 0;
   itk::ImageRegionConstIterator<reg1DImageType> it( reg1DSignal, reg1DSignal->GetLargestPossibleRegion() );
   for (it.GoToBegin(); !it.IsAtEnd(); ++it, i++)
-  {
     sum += vcl_abs(reg1D[i] - it.Get());
-  }
 
   if ( sum <= zeroValue )
     std::cout << "Test PASSED! " << std::endl;
@@ -244,20 +313,20 @@ int main(int, char** )
 
 #if !(FAST_TESTS_NO_CHECKS)
   //Test Reference
-  float DP[100] = {-5, -7.5, -12.5, -17.5, -20, -22.5, -22.5, -22.5, -20, -17.5, -15, -12.5, -7.5, -2.5, 2.5, 5, 10, 12.5, 12.5, 15, 12.5, 12.5, 7.5, 5,
-  0, -5, -7.5, -12.5, -17.5, -20, -22.5, -22.5, -22.5, -20, -20, -15, -12.5, -7.5, -2.5, 2.5, 5, 10, 12.5, 12.5, 12.5, 12.5, 10, 7.5,
-  5, 0, -5, -7.5, -12.5, -17.5, -20, -22.5, -22.5, -22.5, -20, -17.5, -15, -12.5, -7.5, -2.5, 2.5, 5, 10, 12.5, 12.5, 15, 12.5, 12.5,
-  7.5, 5, 0, -5, -7.5, -12.5, -17.5, -20, -22.5, -22.5, -22.5, -20, -20, -15, -12.5, -7.5, -2.5, 2.5, 5, 10, 12.5, 12.5, 12.5, 12.5,
-  10, 7.5, 5, 0};
+  float DP[100] = {2.5, 7.5, 12.5, 15, 17.5, 20, 20, 20, 20, 17.5, 12.5, 10, 5, 0, -5, -7.5, -10,
+                   -12.5, -15, -15, -15, -12.5, -10, -7.5, -2.5, 2.5, 7.5, 10, 15, 17.5, 20, 20,
+                   20, 17.5, 15, 12.5, 10, 5, 0, -5, -7.5, -10, -12.5, -15, -15, -12.5, -12.5,
+                   -10, -5, 0, 2.5, 7.5, 12.5, 15, 17.5, 20, 20, 20, 20, 17.5, 12.5, 10, 5, 0,
+                   -5, -7.5, -10, -12.5, -15, -15, -15, -12.5, -10, -7.5, -2.5, 2.5, 7.5, 10,
+                   15, 17.5, 20, 20, 20, 17.5, 15, 12.5, 10, 5, 0, -5, -7.5, -10, -12.5, -15, -15,
+                   -12.5, -12.5, -10, -5, 0};
 
   //Checking for possible errors
   sum = 0.;
   i = 0;
   itk::ImageRegionConstIterator< reg1DImageType > itDP( DPSignal, DPSignal->GetLargestPossibleRegion() );
   for (itDP.GoToBegin(); !itDP.IsAtEnd(); ++itDP, i++)
-  {
     sum += vcl_abs(DP[i] - itDP.Get());
-  }
 
   if ( sum <= zeroValue )
     std::cout << "Test PASSED! " << std::endl;

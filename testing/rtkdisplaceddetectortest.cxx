@@ -8,9 +8,13 @@
 #include "rtkDisplacedDetectorImageFilter.h"
 
 template<class TImage>
+#if FAST_TESTS_NO_CHECKS
+void CheckImageQuality(typename TImage::Pointer itkNotUsed(recon), typename TImage::Pointer itkNotUsed(ref))
+{
+}
+#else
 void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer ref)
 {
-#if !(FAST_TESTS_NO_CHECKS)
   typedef itk::ImageRegionConstIterator<TImage> ImageIteratorType;
   ImageIteratorType itTest( recon, recon->GetBufferedRegion() );
   ImageIteratorType itRef( ref, ref->GetBufferedRegion() );
@@ -57,8 +61,22 @@ void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer 
               << PSNR << " instead of 24." << std::endl;
     exit( EXIT_FAILURE);
   }
-#endif
 }
+#endif
+
+/**
+ * \file rtkdisplaceddetectortest.cxx
+ *
+ * \brief Functional test for classes performing FDK reconstructions with a
+ * displaced detector/source
+ *
+ * This test generates the projections of a simulated Shepp-Logan phantom and
+ * different sets of geometries with different displaced detectors and sources.
+ * Images are then reconstructed from the generated projection images and
+ * compared to the expected results which is analytically computed.
+ *
+ * \author Simon Rit and Marc Vila
+ */
 
 int main(int, char**)
 {

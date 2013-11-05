@@ -23,6 +23,9 @@
 #include <itkImageSeriesReader.h>
 #include <itkConfigure.h>
 
+// RTK
+#include "rtkIOFactories.h"
+
 // Varian Obi includes
 #include "rtkHndImageIOFactory.h"
 #include "rtkVarianObiRawImageFilter.h"
@@ -41,6 +44,10 @@
 // European Synchrotron Radiation Facility
 #include "rtkEdfImageIOFactory.h"
 #include "rtkEdfRawToAttenuationImageFilter.h"
+
+// Xrad small animal scanner
+#include "rtkXRadImageIOFactory.h"
+#include "rtkXRadRawToAttenuationImageFilter.h"
 
 namespace rtk
 {
@@ -66,16 +73,8 @@ void ProjectionsReader<TOutputImage>
 
   static bool firstTime = true;
   if(firstTime)
-    {
-    rtk::HndImageIOFactory::RegisterOneFactory();
-    rtk::HisImageIOFactory::RegisterOneFactory();
-    rtk::ImagXImageIOFactory::RegisterOneFactory();
-    rtk::EdfImageIOFactory::RegisterOneFactory();
-#if ITK_VERSION_MAJOR <= 3
-    itk::ImageIOFactory::RegisterBuiltInFactories();
-#endif
-    firstTime = false;
-    }
+    rtk::RegisterIOFactories();
+
   itk::ImageIOBase::Pointer imageIO = itk::ImageIOFactory::CreateImageIO( m_FileNames[0].c_str(), itk::ImageIOFactory::ReadMode );
 
   if(m_ImageIO != imageIO)
@@ -174,6 +173,25 @@ void ProjectionsReader<TOutputImage>
       typename RawFilterType::Pointer rawFilter = RawFilterType::New();
       rawFilter->SetInput( reader->GetOutput() );
       rawFilter->SetFileNames( this->GetFileNames() );
+      m_RawToProjectionsFilter = rawFilter;
+      }
+    else if( !strcmp(imageIO->GetNameOfClass(), "XRadImageIO") )
+      {
+      /////////// XRad
+      typedef unsigned short                                     InputPixelType;
+      typedef itk::Image< InputPixelType, OutputImageDimension > InputImageType;
+
+      // Reader
+      typedef itk::ImageSeriesReader< InputImageType > ReaderType;
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetImageIO( imageIO );
+      reader->SetFileNames( this->GetFileNames() );
+      m_RawDataReader = reader;
+
+      // Convert raw to Projections
+      typedef rtk::XRadRawToAttenuationImageFilter<InputImageType, OutputImageType> RawFilterType;
+      typename RawFilterType::Pointer rawFilter = RawFilterType::New();
+      rawFilter->SetInput( reader->GetOutput() );
       m_RawToProjectionsFilter = rawFilter;
       }
     else

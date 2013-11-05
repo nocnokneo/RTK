@@ -24,6 +24,7 @@
 #include <itkImageBase.h>
 #include "rtkRayQuadricIntersectionFunction.h"
 #include "rtkMacro.h"
+#include "rtkWin32Header.h"
 
 namespace rtk
 {
@@ -32,11 +33,13 @@ namespace rtk
  * \brief Reads configuration file containing specifications of a geometric
  * phantom.
  *
+ * \test rtkprojectgeometricphantomtest.cxx, rtkdrawgeometricphantomtest.cxx
+ *
  * \author Marc Vila
  *
  * \ingroup Functions
  */
-class GeometricPhantomFileReader :
+class RTK_EXPORT GeometricPhantomFileReader :
     public itk::Object
 {
 public:
@@ -55,11 +58,24 @@ public:
   /** Useful defines. */
   typedef std::vector<double>                VectorType;
   typedef std::vector< std::vector<double> > VectorOfVectorType;
+  typedef std::string                        StringType;
+
+//FIXME: this struct should be used, but error with Get/Set Macros
+//  struct FigureType
+//  {
+//    //FigureType():angle(0.),density(0.){};
+//    VectorOfVectorType       parameters;
+//    std::vector<std::string> figure;
+//  };
 
   bool Config( const std::string input);
 
   virtual VectorOfVectorType GetFig ();
   virtual void SetFig (const VectorOfVectorType _arg);
+
+  /** Get/Set Number of Figures.*/
+  rtkSetStdVectorMacro(FigureTypes, std::vector<StringType>);
+  rtkGetStdVectorMacro(FigureTypes, std::vector<StringType>);
 
 protected:
 
@@ -70,7 +86,8 @@ protected:
   ~GeometricPhantomFileReader() {};
 
   /** Corners of the image Quadric */
-  VectorOfVectorType m_Fig;
+  VectorOfVectorType      m_Fig;
+  std::vector<StringType> m_FigureTypes;
 
 private:
   GeometricPhantomFileReader( const Self& ); //purposely not implemented

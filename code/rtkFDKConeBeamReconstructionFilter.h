@@ -22,6 +22,7 @@
 #include "rtkFDKWeightProjectionFilter.h"
 #include "rtkFFTRampImageFilter.h"
 #include "rtkFDKBackProjectionImageFilter.h"
+#include "rtkConfiguration.h"
 
 #include <itkExtractImageFilter.h>
 #include <itkTimeProbe.h>
@@ -40,6 +41,9 @@ namespace rtk
  * The input stack of projections is processed piece by piece (the size is
  * controlled with ProjectionSubsetSize) via the use of itk::ExtractImageFilter
  * to extract sub-stacks.
+ *
+ * \test rtkfdktest.cxx, rtkrampfiltertest.cxx, rtkmotioncompensatedfdktest.cxx,
+ * rtkdisplaceddetectortest.cxx, rtkshortscantest.cxx
  *
  * \author Simon Rit
  *

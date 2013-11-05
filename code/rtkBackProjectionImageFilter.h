@@ -36,12 +36,14 @@ namespace rtk
  * is voxel-based, meaning that the center of each voxel is projected in the
  * projection images to determine the interpolation location.
  *
+ * \test rtkfovtest.cxx
+ *
  * \author Simon Rit
  *
  * \ingroup Projector
  */
 template <class TInputImage, class TOutputImage>
-class ITK_EXPORT BackProjectionImageFilter :
+class BackProjectionImageFilter :
   public itk::InPlaceImageFilter<TInputImage,TOutputImage>
 {
 public:
@@ -91,8 +93,10 @@ protected:
 
   /** The input is a stack of projections, we need to interpolate in one projection
       for efficiency during interpolation. Use of itk::ExtractImageFilter is
-      not threadsafe in ThreadedGenerateData, this one is. The output can be multiplied by a constant. */
-  ProjectionImagePointer GetProjection(const unsigned int iProj);
+      not threadsafe in ThreadedGenerateData, this one is. The output can be multiplied by a constant.
+      The function is templated to allow getting an itk::CudaImage. */
+  template<class TProjectionImage>
+  typename TProjectionImage::Pointer GetProjection(const unsigned int iProj);
 
   /** Creates iProj index to index projection matrices with current inputs
       instead of the physical point to physical point projection matrix provided by Geometry */

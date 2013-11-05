@@ -4,19 +4,24 @@
 #include "rtkDrawEllipsoidImageFilter.h"
 #include "rtkRayEllipsoidIntersectionImageFilter.h"
 #include "rtkConstantImageSource.h"
-#include "rtkCudaBackProjectionImageFilter.h"
 #include "rtkJosephBackProjectionImageFilter.h"
 
 #ifdef USE_CUDA
-#  include "rtkCudaSARTConeBeamReconstructionFilter.h"
+  #include "rtkCudaBackProjectionImageFilter.h"
+  #include "rtkCudaSARTConeBeamReconstructionFilter.h"
+  #include "itkCudaImage.h"
 #else
-#  include "rtkSARTConeBeamReconstructionFilter.h"
+  #include "rtkSARTConeBeamReconstructionFilter.h"
 #endif
 
 template<class TImage>
+#if FAST_TESTS_NO_CHECKS
+void CheckImageQuality(typename TImage::Pointer itkNotUsed(recon), typename TImage::Pointer itkNotUsed(ref))
+{
+}
+#else
 void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer ref)
 {
-#if !(FAST_TESTS_NO_CHECKS)
   typedef itk::ImageRegionConstIterator<TImage> ImageIteratorType;
   ImageIteratorType itTest( recon, recon->GetBufferedRegion() );
   ImageIteratorType itRef( ref, ref->GetBufferedRegion() );
@@ -63,14 +68,33 @@ void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer 
               << PSNR << " instead of 28.6" << std::endl;
     exit( EXIT_FAILURE);
   }
-#endif
 }
+#endif
+
+/**
+ * \file rtksarttest.cxx
+ *
+ * \brief Functional test for SART reconstruction
+ *
+ * This test generates the projections of an ellipsoid and reconstructs the CT
+ * image using the SART algorithm with different backprojectors (Voxel-Based,
+ * Joseph and CUDA Voxel-Based). The generated results are compared to the
+ * expected results (analytical calculation).
+ *
+ * \author Simon Rit and Marc Vila
+ */
 
 int main(int, char** )
 {
   const unsigned int Dimension = 3;
   typedef float                                    OutputPixelType;
+
+#ifdef USE_CUDA
+  typedef itk::CudaImage< OutputPixelType, Dimension > OutputImageType;
+#else
   typedef itk::Image< OutputPixelType, Dimension > OutputImageType;
+#endif
+
 #if FAST_TESTS_NO_CHECKS
   const unsigned int NumberOfProjectionImages = 3;
 #else
@@ -143,14 +167,11 @@ int main(int, char** )
   REIType::Pointer rei;
 
   rei = REIType::New();
-  rei->SetSemiPrincipalAxisX(90.);
-  rei->SetSemiPrincipalAxisZ(90.);
-  rei->SetSemiPrincipalAxisY(90.);
-  rei->SetCenterX(0.);
-  rei->SetCenterZ(0.);
-  rei->SetCenterY(0.);
-  rei->SetRotationAngle(0.);
-  rei->SetMultiplicativeConstant(1.);
+  REIType::VectorType semiprincipalaxis, center;
+  semiprincipalaxis.Fill(90.);
+  center.Fill(0.);
+  rei->SetAngle(0.);
+  rei->SetDensity(1.);
 
   rei->SetInput( projectionsSource->GetOutput() );
   rei->SetGeometry( geometry );

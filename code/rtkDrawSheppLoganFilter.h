@@ -33,6 +33,11 @@ namespace rtk
  * Y and Z have been exchanged to follow the coordinate system of the IEC 61217
  * international standard used by RTK.
  *
+ * \test rtkdrawgeometricphantomtest.cxx,
+ * rtkRaycastInterpolatorForwardProjectionTest.cxx,
+ * rtkfdktest.cxx, rtkrampfiltertest.cxx, rtkforwardprojectiontest.cxx,
+ * rtkdisplaceddetectortest.cxx, rtkshortscantest.cxx
+ *
  * \author Marc Vila
  *
  * \ingroup InPlaceImageFilter
@@ -49,7 +54,7 @@ public:
   typedef itk::SmartPointer<const Self>                     ConstPointer;
   typedef typename TOutputImage::RegionType                 OutputImageRegionType;
 
-  typedef std::vector<double>                               VectorType;
+  typedef itk::Vector<double,3>                             VectorType;
   typedef std::string                                       StringType;
 
   typedef rtk::ConvertEllipsoidToQuadricParametersFunction  EQPFunctionType;

@@ -26,6 +26,10 @@ ADD_LIBRARY(RTK
             rtkGeometricPhantomFileReader.cxx
             rtkDigisensGeometryXMLFileReader.cxx
             rtkDigisensGeometryReader.cxx
+            rtkXRadGeometryReader.cxx
+            rtkXRadImageIO.cxx
+            rtkXRadImageIOFactory.cxx
+            rtkIOFactories.cxx
            )
 
 IF( ITK_VERSION_MAJOR LESS "4" AND (USE_FFTWF OR USE_FFTWD) )
@@ -90,10 +94,11 @@ IF (CUDA_FOUND)
               rtkCudaFDKConeBeamReconstructionFilter.cxx
 	      rtkCudaForwardProjectionImageFilter.cxx
               rtkCudaBackProjectionImageFilter.cxx
+              rtkCudaSARTConeBeamReconstructionFilter.cxx
               ${rtkcuda_CUDA_WRAPPERS}
               ${rtkcuda_CUDA_FILES})
   SET_TARGET_PROPERTIES (rtkcuda PROPERTIES LINKER_LANGUAGE CXX)
-  TARGET_LINK_LIBRARIES(rtkcuda ${CUDA_LIBRARIES} ${CUDA_cufft_LIBRARY} RTK)
+  TARGET_LINK_LIBRARIES(rtkcuda ${CUDA_LIBRARIES} ${CUDA_cufft_LIBRARY} RTK ITKCudaCommon)
 ENDIF (CUDA_FOUND)
 #=========================================================
 

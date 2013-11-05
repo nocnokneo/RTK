@@ -21,6 +21,7 @@
 
 #include "rtkThreeDCircularProjectionGeometryXMLFile.h"
 #include "rtkJosephForwardProjectionImageFilter.h"
+#include "rtkSiddonForwardProjectionImageFilter.h"
 #if CUDA_FOUND
 #  include "rtkCudaForwardProjectionImageFilter.h"
 #endif
@@ -37,7 +38,11 @@ int main(int argc, char * argv[])
   typedef float OutputPixelType;
   const unsigned int Dimension = 3;
 
-  typedef itk::Image< OutputPixelType, Dimension > OutputImageType;
+  #if CUDA_FOUND
+    typedef itk::CudaImage< OutputPixelType, Dimension > OutputImageType;
+  #else
+    typedef itk::Image< OutputPixelType, Dimension > OutputImageType;
+  #endif
 
   // Geometry
   if(args_info.verbose_flag)
@@ -86,11 +91,16 @@ int main(int argc, char * argv[])
   if(args_info.verbose_flag)
     std::cout << "Projecting volume..." << std::flush;
   itk::TimeProbe projProbe;
+
   rtk::ForwardProjectionImageFilter<OutputImageType, OutputImageType>::Pointer forwardProjection;
+  
   switch(args_info.method_arg)
   {
   case(method_arg_Joseph):
     forwardProjection = rtk::JosephForwardProjectionImageFilter<OutputImageType, OutputImageType>::New();
+    break;
+  case(method_arg_Siddon):
+    forwardProjection = rtk::SiddonForwardProjectionImageFilter<OutputImageType, OutputImageType>::New();
     break;
   case(method_arg_CudaRayCast):
 #if CUDA_FOUND

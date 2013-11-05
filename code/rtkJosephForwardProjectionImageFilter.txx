@@ -43,12 +43,19 @@ JosephForwardProjectionImageFilter<TInputImage,
 {
   const unsigned int Dimension = TInputImage::ImageDimension;
   const unsigned int nPixelPerProj = outputRegionForThread.GetSize(0)*outputRegionForThread.GetSize(1);
-  const typename TInputImage::PixelType *beginBuffer = this->GetInput(1)->GetBufferPointer();
-  unsigned int offsets[3];
+  int offsets[3];
   offsets[0] = 1;
   offsets[1] = this->GetInput(1)->GetBufferedRegion().GetSize()[0];
   offsets[2] = this->GetInput(1)->GetBufferedRegion().GetSize()[0] * this->GetInput(1)->GetBufferedRegion().GetSize()[1];
   const typename Superclass::GeometryType::Pointer geometry = this->GetGeometry();
+
+  // beginBuffer is pointing at point with index (0,0,0) in memory, even if
+  // it is not in the allocated memory
+  const typename TInputImage::PixelType *beginBuffer =
+      this->GetInput(1)->GetBufferPointer() -
+      offsets[0] * this->GetInput(1)->GetBufferedRegion().GetIndex()[0] -
+      offsets[1] * this->GetInput(1)->GetBufferedRegion().GetIndex()[1] -
+      offsets[2] * this->GetInput(1)->GetBufferedRegion().GetIndex()[2];
 
   // Iterators on volume input and output
   typedef itk::ImageRegionConstIterator<TInputImage> InputRegionIterator;
@@ -65,13 +72,9 @@ JosephForwardProjectionImageFilter<TInputImage,
     typename RBIFunctionType::VectorType boxMin, boxMax;
     for(unsigned int i=0; i<Dimension; i++)
       {
-      boxMin[i] = this->GetInput(1)->GetBufferedRegion().GetIndex()[i]+0.001;  // To avoid numerical errors
-      boxMax[i] = boxMin[i] + this->GetInput(1)->GetBufferedRegion().GetSize()[i]-1.001;  // To avoid numerical errors
-      if(i==j)
-        {
-        boxMin[i] -= 0.5;
-        boxMax[i] += 0.5;
-        }
+      boxMin[i] = this->GetInput(1)->GetBufferedRegion().GetIndex()[i] + 0.001;  // To avoid numerical errors
+      boxMax[i] = this->GetInput(1)->GetBufferedRegion().GetIndex()[i] +
+                  this->GetInput(1)->GetBufferedRegion().GetSize()[i]  - 1.001;  // To avoid numerical errors
       }
     rbi[j]->SetBoxMin(boxMin);
     rbi[j]->SetBoxMax(boxMax);
@@ -123,35 +126,19 @@ JosephForwardProjectionImageFilter<TInputImage,
         }
 
       // Test if there is an intersection
-      if( rbi[mainDir]->Evaluate(dirVox) )
+      if( rbi[mainDir]->Evaluate(dirVox) &&
+          rbi[mainDir]->GetFarthestDistance()>=0. && // check if detector after the source
+          rbi[mainDir]->GetNearestDistance()<=1.)    // check if detector after or in the volume
         {
+        // Clip the casting between source and pixel of the detector
+        rbi[mainDir]->SetNearestDistance ( std::max(rbi[mainDir]->GetNearestDistance() , 0.) );
+        rbi[mainDir]->SetFarthestDistance( std::min(rbi[mainDir]->GetFarthestDistance(), 1.) );
+
         // Compute and sort intersections: (n)earest and (f)arthest (p)points
         np = rbi[mainDir]->GetNearestPoint();
         fp = rbi[mainDir]->GetFarthestPoint();
         if(np[mainDir]>fp[mainDir])
           std::swap(np, fp);
-
-        // If the source is in the volume, use source as one of the intersection points
-        if(dirVox[mainDir]>0)
-          {
-          if(np[mainDir]<sourcePosition[mainDir])
-            {
-            // Source is in volume
-            np[0]=sourcePosition[0];
-            np[1]=sourcePosition[1];
-            np[2]=sourcePosition[2];
-            }
-          }
-        else
-          {
-          if(fp[mainDir]>sourcePosition[mainDir])
-            {
-            // Source is in volume
-            fp[0]=sourcePosition[0];
-            fp[1]=sourcePosition[1];
-            fp[2]=sourcePosition[2];
-            }
-          }
 
         // Compute main nearest and farthest slice indices
         const int ns = vnl_math_ceil ( np[mainDir] );
@@ -159,7 +146,17 @@ JosephForwardProjectionImageFilter<TInputImage,
 
         // If its a corner, we can skip
         if( fs<ns )
-          continue;
+          {
+          itOut.Set( m_ProjectedValueAccumulation(threadId,
+                                                  itIn.Get(),
+                                                  0.,
+                                                  &(sourcePosition[0]),
+                                                  &(sourcePosition[0]),
+                                                  dirVox,
+                                                  &(sourcePosition[0]),
+                                                  &(sourcePosition[0])) );
+           continue;
+           }
 
         // Determine the other two directions
         unsigned int notMainDirInf = (mainDir+1)%Dimension;
@@ -168,10 +165,11 @@ JosephForwardProjectionImageFilter<TInputImage,
           std::swap(notMainDirInf, notMainDirSup);
 
         // Init data pointers to first pixel of slice ns (i)nferior and (s)uperior (x|y) corner
-        const unsigned int offsetx = offsets[notMainDirInf];
-        const unsigned int offsety = offsets[notMainDirSup];
-        const unsigned int offsetz = offsets[mainDir];
+        const int offsetx = offsets[notMainDirInf];
+        const int offsety = offsets[notMainDirSup];
+        const int offsetz = offsets[mainDir];
         const typename TInputImage::PixelType *pxiyi, *pxsyi, *pxiys, *pxsys;
+
         pxiyi = beginBuffer + ns * offsetz;
         pxsyi = pxiyi + offsetx;
         pxiys = pxiyi + offsety;
@@ -270,12 +268,12 @@ JosephForwardProjectionImageFilter<TInputImage,
                          const InputPixelType *pxsys,
                          const CoordRepType x,
                          const CoordRepType y,
-                         const unsigned int ox,
-                         const unsigned int oy )
+                         const int ox,
+                         const int oy )
 {
-  unsigned int ix = vnl_math_floor(x);
-  unsigned int iy = vnl_math_floor(y);
-  unsigned int idx = ix*ox + iy*oy;
+  int ix = vnl_math_floor(x);
+  int iy = vnl_math_floor(y);
+  int idx = ix*ox + iy*oy;
   CoordRepType lx = x - ix;
   CoordRepType ly = y - iy;
   CoordRepType lxc = 1.-lx;

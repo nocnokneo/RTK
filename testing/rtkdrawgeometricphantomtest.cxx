@@ -4,7 +4,6 @@
 #include "rtkConstantImageSource.h"
 #include "rtkGeometricPhantomFileReader.h"
 #include "rtkDrawGeometricPhantomImageFilter.h"
-#include "rtkSheppLoganPhantomFilter.h"
 #include "rtkDrawSheppLoganFilter.h"
 
 #include <itkRegularExpressionSeriesFileNames.h>
@@ -12,9 +11,13 @@
 typedef rtk::ThreeDCircularProjectionGeometry GeometryType;
 
 template<class TImage>
+#if FAST_TESTS_NO_CHECKS
+void CheckImageQuality(typename TImage::Pointer itkNotUsed(recon), typename TImage::Pointer itkNotUsed(ref))
+{
+}
+#else
 void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer ref)
 {
-#if !(FAST_TESTS_NO_CHECKS)
   typedef itk::ImageRegionConstIterator<TImage> ImageIteratorType;
   ImageIteratorType itTest( recon, recon->GetBufferedRegion() );
   ImageIteratorType itRef( ref, ref->GetBufferedRegion() );
@@ -65,8 +68,22 @@ void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer 
               << PSNR << " instead of 90" << std::endl;
     exit( EXIT_FAILURE);
     }
-#endif
 }
+#endif
+
+/**
+ * \file rtkdrawgeometricphantomtest.cxx
+ *
+ * \brief Functional test for the class that creates a geometric phantom
+ * specified in a config file.
+ *
+ * This test generates several phantoms with different geometrical shapes
+ * (Cone, Cylinder, Shepp-Logan...) specified by configuration files.
+ * The generated results are compared to the expected results, which are
+ * created through hard-coded geometric parameters.
+ *
+ * \author Marc Vila
+ */
 
 int main(int, char** )
 {
@@ -139,32 +156,41 @@ int main(int, char** )
     dgp->InPlaceOff();
     TRY_AND_EXIT_ON_ITK_EXCEPTION( dgp->Update() );
 
-    // Create Reference
-    std::vector< double > axis;
-    axis.push_back(100.);
-    axis.push_back(0.);
-    axis.push_back(100.);
+//    // Create Reference
+//    std::vector< double > axis;
+//    axis.push_back(100.);
+//    axis.push_back(0.);
+//    axis.push_back(100.);
 
-    std::vector< double > center;
-    center.push_back(2.);
-    center.push_back(2.);
-    center.push_back(2.);
+//    std::vector< double > center;
+//    center.push_back(2.);
+//    center.push_back(2.);
+//    center.push_back(2.);
 
     // Draw CYLINDER
     typedef rtk::DrawCylinderImageFilter<OutputImageType, OutputImageType> DCType;
     DCType::Pointer dcl = DCType::New();
+
+    DCType::VectorType axis, center;
+    axis[0] = 100.;
+    axis[1] = 0.;
+    axis[2] = 100.;
+    center[0] = 2.;
+    center[1] = 2.;
+    center[2] = 2.;
+
     dcl->SetInput( tomographySource->GetOutput() );
     dcl->SetAxis(axis);
     dcl->SetCenter(center);
     dcl->SetAngle(0.);
-    dcl->SetAttenuation(2.);
+    dcl->SetDensity(2.);
     dcl->InPlaceOff();
 
     // Draw CONE
-    axis.clear();
-    axis.push_back(25.);
-    axis.push_back(-50.);
-    axis.push_back(25.);
+    //axis.clear();
+    axis[0] = 25.;
+    axis[1] = -50.;
+    axis[2] = 25.;
 
     typedef rtk::DrawConeImageFilter<OutputImageType, OutputImageType> DCOType;
     DCOType::Pointer dco = DCOType::New();
@@ -172,7 +198,7 @@ int main(int, char** )
     dco->SetAxis(axis);
     dco->SetCenter(center);
     dco->SetAngle(0.);
-    dco->SetAttenuation(-0.54);
+    dco->SetDensity(-0.54);
 
     //Add Image Filter used to concatenate the different figures obtained on each iteration
     typedef itk::AddImageFilter <OutputImageType, OutputImageType, OutputImageType> AddImageFilterType;

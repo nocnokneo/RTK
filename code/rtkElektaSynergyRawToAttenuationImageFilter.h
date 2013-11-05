@@ -25,7 +25,10 @@
 #include "rtkElektaSynergyLookupTableImageFilter.h"
 #include "rtkBoellaardScatterCorrectionImageFilter.h"
 
-/** \class RawToAttenuationImageFilter
+namespace rtk
+{
+
+/** \class ElektaSynergyRawToAttenuationImageFilter
  * \brief Convert raw Elekta Synergy data to attenuation images
  *
  * This composite filter composes the operations required to convert
@@ -33,13 +36,12 @@
  * attenuation images usable in standard reconstruction algorithms,*
  * e.g. Feldkamp algorithm.
  *
+ * \test rtkelektatest.cxx
+ *
  * \author Simon Rit
  *
  * \ingroup ImageToImageFilter
  */
-namespace rtk
-{
-
 template<class TInputImage, class TOutputImage=TInputImage>
 class ITK_EXPORT ElektaSynergyRawToAttenuationImageFilter :
   public itk::ImageToImageFilter<TInputImage, TOutputImage>
@@ -80,13 +82,15 @@ private:
   ElektaSynergyRawToAttenuationImageFilter(const Self&);
   void operator=(const Self&);
 
-  typedef itk::CropImageFilter<InputImageType, InputImageType>                       CropFilterType;
-  typedef rtk::BoellaardScatterCorrectionImageFilter<InputImageType, InputImageType> ScatterFilterType;
-  typedef rtk::ElektaSynergyLookupTableImageFilter<InputImageType, OutputImageType>          LookupTableFilterType;
+  typedef itk::CropImageFilter<InputImageType, InputImageType>                                  CropFilterType;
+  typedef rtk::BoellaardScatterCorrectionImageFilter<InputImageType, InputImageType>            ScatterFilterType;
+  typedef typename rtk::ElektaSynergyRawLookupTableImageFilter<OutputImageType::ImageDimension> RawLookupTableFilterType;
+  typedef rtk::ElektaSynergyLogLookupTableImageFilter<OutputImageType>                          LogLookupTableFilterType;
 
-  typename LookupTableFilterType::Pointer m_LookupTableFilter;
-  typename CropFilterType::Pointer        m_CropFilter;
-  typename ScatterFilterType::Pointer     m_ScatterFilter;
+  typename RawLookupTableFilterType::Pointer m_RawLookupTableFilter;
+  typename LogLookupTableFilterType::Pointer m_LogLookupTableFilter;
+  typename CropFilterType::Pointer           m_CropFilter;
+  typename ScatterFilterType::Pointer        m_ScatterFilter;
 }; // end of class
 
 } // end namespace rtk

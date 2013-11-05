@@ -117,6 +117,7 @@ ENDIF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 #=========================================================
 # Shared libraries option
 OPTION(BUILD_SHARED_LIBS "Build RTK with shared libraries." ${ITK_BUILD_SHARED})
+SET(RTK_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
 #=========================================================
 
 #=========================================================
@@ -153,6 +154,9 @@ endif()
 #=========================================================
 
 LIST(APPEND RTK_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/code")
+IF(CUDA_FOUND)
+  LIST(APPEND RTK_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/utilities/ITKCudaCommon/include/")
+ENDIF(CUDA_FOUND)
 LIST(APPEND RTK_INCLUDE_DIRS "${PROJECT_BINARY_DIR}")
 INCLUDE_DIRECTORIES(${RTK_INCLUDE_DIRS})
 
@@ -169,6 +173,10 @@ IF(ITK_VERSION_MAJOR LESS "4")
   INCLUDE_DIRECTORIES(BEFORE utilities/itkcrop)
 ENDIF()
 
+IF(CUDA_FOUND)
+  ADD_SUBDIRECTORY(utilities/ITKCudaCommon)
+  INCLUDE_DIRECTORIES(utilities/ITKCudaCommon/include)
+ENDIF(CUDA_FOUND)
 
 ADD_SUBDIRECTORY(code)
 

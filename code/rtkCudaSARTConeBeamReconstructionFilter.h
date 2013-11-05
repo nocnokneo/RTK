@@ -32,6 +32,8 @@
 #include <itkSubtractImageFilter.h>
 #include <itkTimeProbe.h>
 
+#include <itkCudaImage.h>
+
 namespace rtk
 {
 
@@ -48,19 +50,21 @@ namespace rtk
  * controlled with ProjectionSubsetSize) via the use of itk::ExtractImageFilter
  * to extract sub-stacks.
  *
+ * \test rtksarttest.cxx
+ *
  * \author Simon Rit
  *
  * \ingroup ReconstructionAlgorithm
  */
 class ITK_EXPORT CudaSARTConeBeamReconstructionFilter :
-  public rtk::SARTConeBeamReconstructionFilter< itk::Image<float,3>, itk::Image<float,3> >
+  public rtk::SARTConeBeamReconstructionFilter< itk::CudaImage<float,3>, itk::CudaImage<float,3> >
 {
 public:
   /** Standard class typedefs. */
-  typedef CudaSARTConeBeamReconstructionFilter                                          Self;
-  typedef SARTConeBeamReconstructionFilter< itk::Image<float,3>, itk::Image<float,3> >  Superclass;
-  typedef itk::SmartPointer<Self>                                                       Pointer;
-  typedef itk::SmartPointer<const Self>                                                 ConstPointer;
+  typedef CudaSARTConeBeamReconstructionFilter                                                  Self;
+  typedef SARTConeBeamReconstructionFilter< itk::CudaImage<float,3>, itk::CudaImage<float,3> >  Superclass;
+  typedef itk::SmartPointer<Self>                                                               Pointer;
+  typedef itk::SmartPointer<const Self>                                                         ConstPointer;
 
   /** Typedefs of each subfilter of this composite filter */
   typedef rtk::CudaForwardProjectionImageFilter                                          ForwardProjectionFilterType;
@@ -76,30 +80,13 @@ protected:
   CudaSARTConeBeamReconstructionFilter();
   ~CudaSARTConeBeamReconstructionFilter(){}
 
-  void GenerateData();
-
-  void InitDevice();
-
-  void CleanUpDevice();
-
-  /** Boolean to keep the hand on the memory management of the GPU. Default is
-   * off. If on, the user must call manually InitDevice and CleanUpDevice. */
-  itkGetMacro(ExplicitGPUMemoryManagementFlag, bool);
-  itkSetMacro(ExplicitGPUMemoryManagementFlag, bool);
-
 private:
   //purposely not implemented
   CudaSARTConeBeamReconstructionFilter(const Self&);
   void operator=(const Self&);
 
-  bool m_ExplicitGPUMemoryManagementFlag;
-
 }; // end of class
 
 } // end namespace rtk
-
-#ifndef ITK_MANUAL_INSTANTIATION
-#include "rtkCudaSARTConeBeamReconstructionFilter.cxx"
-#endif
 
 #endif

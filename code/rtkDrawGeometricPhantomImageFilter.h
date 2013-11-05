@@ -36,11 +36,13 @@ namespace rtk
  * The filter draws a list of quadric shapes which parameters are passed by a
  * file. See rtkGeometricPhantomFileReader.h for the file format.
  *
+ * \test rtkdrawgeometricphantomtest.cxx
+ *
  * \author Marc Vila
  *
  * \ingroup InPlaceImageFilter
  */
-template <class TInputImage, class TOutputImage>
+template <class TInputImage, class TOutputImage=TInputImage>
 class ITK_EXPORT DrawGeometricPhantomImageFilter :
   public itk::InPlaceImageFilter<TInputImage,TOutputImage>
 {
@@ -52,7 +54,7 @@ public:
   typedef itk::SmartPointer<const Self>                             ConstPointer;
   typedef typename TOutputImage::RegionType                         OutputImageRegionType;
 
-  typedef std::vector<double>                                       VectorType;
+  typedef itk::Vector<double,3>                                     VectorType;
   typedef std::vector< std::vector<double> >                        VectorOfVectorType;
   typedef std::string                                               StringType;
 

@@ -2,6 +2,12 @@
 #ifdef RAMP_FILTER_TEST_WITHOUT_FFTW
 #  include "rtkConfiguration.h"
 #  include <itkImageToImageFilter.h>
+#  if defined(ITK_USE_FFTWF)
+#    undef ITK_USE_FFTWF
+#  endif
+#  if defined(ITK_USE_FFTWD)
+#    undef ITK_USE_FFTWD
+#  endif
 #  if defined(USE_FFTWF)
 #    undef USE_FFTWF
 #  endif
@@ -16,11 +22,26 @@
 #include "rtkTestConfiguration.h"
 #include "rtkSheppLoganPhantomFilter.h"
 #include "rtkDrawSheppLoganFilter.h"
-#include "rtkFDKConeBeamReconstructionFilter.h"
 #include "rtkConstantImageSource.h"
 #include "rtkAdditiveGaussianNoiseImageFilter.h"
 
+#ifdef USE_CUDA
+#  include "rtkCudaFDKConeBeamReconstructionFilter.h"
+#else
+#  include "rtkFDKConeBeamReconstructionFilter.h"
+#endif
+
 template<class TImage>
+#if FAST_TESTS_NO_CHECKS
+void CheckImageQuality(typename TImage::Pointer itkNotUsed(recon),
+                       typename TImage::Pointer itkNotUsed(ref),
+                       double itkNotUsed(refLowerThreshold),
+                       double itkNotUsed(refUpperThreshold),
+                       double itkNotUsed(snrThreshold),
+                       double itkNotUsed(errorPerPixelThreshold))
+{
+}
+#else
 void CheckImageQuality(typename TImage::Pointer recon,
                        typename TImage::Pointer ref,
                        double refLowerThreshold,
@@ -28,7 +49,6 @@ void CheckImageQuality(typename TImage::Pointer recon,
                        double snrThreshold,
                        double errorPerPixelThreshold)
 {
-#if !(FAST_TESTS_NO_CHECKS)
   typedef itk::ImageRegionConstIterator<TImage> ImageIteratorType;
   ImageIteratorType itTest( recon, recon->GetBufferedRegion() );
   ImageIteratorType itRef( ref, ref->GetBufferedRegion() );
@@ -77,15 +97,33 @@ void CheckImageQuality(typename TImage::Pointer recon,
               << PSNR << " instead of " << snrThreshold << std::endl;
     exit( EXIT_FAILURE);
   }
-#endif
 }
+#endif
 
+/**
+ * \file rtkrampfiltertest.cxx
+ *
+ * \brief Functional test for the ramp filter of the FDK reconstruction.
+ *
+ * This test generates the projections of a simulated Shepp-Logan phantom in
+ * different reconstruction scenarios (noise, truncation).
+ * CT images are reconstructed from each set of projection images using the
+ * FDK algorithm with different configuration of the ramp filter in order to
+ * reduce the possible artifacts. The generated results are compared to the
+ * expected results (analytical calculation).
+ *
+ * \author Simon Rit
+ */
 
 int main(int , char** )
 {
   const unsigned int Dimension = 3;
   typedef float                                    OutputPixelType;
+#ifdef USE_CUDA
+  typedef itk::CudaImage< OutputPixelType, Dimension > OutputImageType;
+#else
   typedef itk::Image< OutputPixelType, Dimension > OutputImageType;
+#endif
 #if FAST_TESTS_NO_CHECKS
   const unsigned int NumberOfProjectionImages = 3;
 #else
@@ -174,8 +212,12 @@ int main(int , char** )
   TRY_AND_EXIT_ON_ITK_EXCEPTION( dsl->Update() );
 
   // FDK reconstruction filtering
-  typedef rtk::FDKConeBeamReconstructionFilter< OutputImageType > FDKCPUType;
-  FDKCPUType::Pointer feldkamp = FDKCPUType::New();
+#ifdef USE_CUDA
+  typedef rtk::CudaFDKConeBeamReconstructionFilter                FDKType;
+#else
+  typedef rtk::FDKConeBeamReconstructionFilter< OutputImageType > FDKType;
+#endif
+  FDKType::Pointer feldkamp = FDKType::New();
   feldkamp->SetInput( 0, tomographySource->GetOutput() );
   feldkamp->SetInput( 1, noisy->GetOutput() );
   feldkamp->SetGeometry( geometry );
@@ -184,14 +226,19 @@ int main(int , char** )
 
   CheckImageQuality<OutputImageType>(feldkamp->GetOutput(), dsl->GetOutput(), 1.05, 1.06, 40, 0.13);
 
+  std::cout << "\n\n****** Test 1.5: add noise and test HannY window ******" << std::endl;
+  feldkamp->GetRampFilter()->SetHannCutFrequencyY(0.8);
+  feldkamp->Modified();
+  TRY_AND_EXIT_ON_ITK_EXCEPTION( feldkamp->Update() );
+  CheckImageQuality<OutputImageType>(feldkamp->GetOutput(), dsl->GetOutput(), 1.05, 1.06, 40, 0.13);
+
   std::cout << "\n\n****** Test 2: smaller detector and test data padding for truncation ******" << std::endl;
 
   size[0] = 114;
   projectionsSource->SetSize( size );
   TRY_AND_EXIT_ON_ITK_EXCEPTION( slp->UpdateLargestPossibleRegion() );
 
-  typedef rtk::FDKConeBeamReconstructionFilter< OutputImageType > FDKCPUType;
-  FDKCPUType::Pointer feldkampCropped = FDKCPUType::New();
+  FDKType::Pointer feldkampCropped = FDKType::New();
   feldkampCropped->SetInput( 0, tomographySource->GetOutput() );
   feldkampCropped->SetInput( 1, slp->GetOutput() );
   feldkampCropped->SetGeometry( geometry );

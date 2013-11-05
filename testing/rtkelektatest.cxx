@@ -9,9 +9,13 @@
 typedef rtk::ThreeDCircularProjectionGeometry GeometryType;
 
 template<class TImage>
+#if FAST_TESTS_NO_CHECKS
+void CheckImageQuality(typename TImage::Pointer itkNotUsed(recon), typename TImage::Pointer itkNotUsed(ref))
+{
+}
+#else
 void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer ref)
 {
-#if !(FAST_TESTS_NO_CHECKS)
   typedef itk::ImageRegionConstIterator<TImage> ImageIteratorType;
   ImageIteratorType itTest( recon, recon->GetBufferedRegion() );
   ImageIteratorType itRef( ref, ref->GetBufferedRegion() );
@@ -62,12 +66,11 @@ void CheckImageQuality(typename TImage::Pointer recon, typename TImage::Pointer 
               << PSNR << " instead of 100" << std::endl;
     exit( EXIT_FAILURE);
     }
-#endif
 }
+#endif
 
 void CheckGeometries(GeometryType *g1, GeometryType *g2)
 {
-#if !(FAST_TESTS_NO_CHECKS)
   const double e           = 1e-10;
   const unsigned int nproj = g1->GetGantryAngles().size();
   if(g2->GetGantryAngles().size() != nproj)
@@ -104,8 +107,20 @@ void CheckGeometries(GeometryType *g1, GeometryType *g2)
       }
 
     }
-#endif
 }
+
+/**
+ * \file rtkelektatest.cxx
+ *
+ * \brief Functional tests for classes managing Elekta Synergy data
+ *
+ * This test reads a projection and the geometry of an acquisition from an
+ * Elekta Synergy acquisition and compares it to the expected results, which are
+ * read from a baseline image in the MetaIO file format and a geometry file in
+ * the RTK format, respectively.
+ *
+ * \author Simon Rit
+ */
 
 int main(int, char** )
 {
@@ -154,7 +169,34 @@ int main(int, char** )
   // 2. Compare read projections
   CheckImageQuality< ImageType >(reader->GetOutput(), readerRef->GetOutput());
 
-  // If both succeed
+  // ******* Test split of lookup table ******
+  typedef unsigned short InputPixelType;
+  typedef itk::Image< InputPixelType, 3 > InputImageType;
+  typedef itk::ImageFileReader< InputImageType> RawReaderType;
+  RawReaderType::Pointer r = RawReaderType::New();
+  r->SetFileName(std::string(RTK_DATA_ROOT) +
+                 std::string("/Input/Elekta/raw.his"));
+  r->Update();
+
+  typedef rtk::ElektaSynergyLookupTableImageFilter<ImageType> FullLUTType;
+  FullLUTType::Pointer full = FullLUTType::New();
+  full->SetInput(r->GetOutput());
+  full->Update();
+
+  typedef rtk::ElektaSynergyRawLookupTableImageFilter<3> RawLUTType;
+  RawLUTType::Pointer raw = RawLUTType::New();
+  raw->SetInput(r->GetOutput());
+  raw->Update();
+
+  typedef rtk::ElektaSynergyLogLookupTableImageFilter<ImageType> LogLUTType;
+  LogLUTType::Pointer log = LogLUTType::New();
+  log->SetInput(raw->GetOutput());
+  log->Update();
+
+  // Compare the result of the full lut with the split lut
+  CheckImageQuality< ImageType >(full->GetOutput(), log->GetOutput());
+
+  // If all succeed
   std::cout << "\n\nTest PASSED! " << std::endl;
   return EXIT_SUCCESS;
 }

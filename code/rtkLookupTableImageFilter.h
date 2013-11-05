@@ -24,9 +24,7 @@
 namespace rtk
 {
 
-namespace Functor
-{
-/** \class LookupTableImageFilter 
+/** \class LookupTableImageFilter
  * \brief Function to do the lookup operation.
  *
  * The lookup table is a 1D image which must contain all possible values.
@@ -35,6 +33,10 @@ namespace Functor
  *
  * \ingroup Functions
  */
+
+namespace Functor
+{
+
 template< class TInput, class TOutput >
 class LUT
 {
@@ -92,7 +94,7 @@ public:
   typedef typename FunctorType::LookupTableType                                                     LookupTableType;
 
   /** Standard class typedefs. */
-  typedef LookupTableImageFilter                                                        Self;
+  typedef LookupTableImageFilter                                                Self;
   typedef itk::UnaryFunctorImageFilter<TInputImage, TOutputImage, FunctorType > Superclass;
   typedef itk::SmartPointer<Self>                                               Pointer;
   typedef itk::SmartPointer<const Self>                                         ConstPointer;

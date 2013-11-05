@@ -19,6 +19,7 @@
 #ifndef __rtkThreeDCircularProjectionGeometry_h
 #define __rtkThreeDCircularProjectionGeometry_h
 
+#include "rtkWin32Header.h"
 #include "rtkProjectionGeometry.h"
 
 namespace rtk
@@ -42,7 +43,7 @@ namespace rtk
  *
  * \ingroup ProjectionGeometry
  */
-class ThreeDCircularProjectionGeometry : public ProjectionGeometry<3>
+class RTK_EXPORT ThreeDCircularProjectionGeometry : public ProjectionGeometry<3>
 {
 public:
   typedef ThreeDCircularProjectionGeometry Self;
@@ -158,6 +159,14 @@ public:
 
   /** This function wraps an angle value between 0 and 360 degrees. */
   static double ConvertAngleBetween0And360Degrees(const double a);
+
+  /** Changes the coordinate on the projection image to the coordinate on a
+   * virtual detector that is perpendicular to the source to isocenter line and
+   * positioned at the intersection between the detector and the source to
+   * isocenter line. If SourceOffsetX is 0., simply adds the ProjectionOffsetX.
+   * It is assumed that OutOfPlaneAngle=0 and InPlaneAngle=0.*/
+  double ToUntiltedCoordinate(const unsigned int noProj,
+                              const double tiltedCoord) const;
 
 protected:
   ThreeDCircularProjectionGeometry() {};
