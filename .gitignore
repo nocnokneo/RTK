@@ -1,3 +1,6 @@
 sandbox/
 build-*/
 documentation/*.pdf
+.cproject
+.project
+.settings/
